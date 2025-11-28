@@ -5,12 +5,13 @@
 ```yaml
 spec_id: SPEC-ANDROID-INIT-001
 version: 1.0.0
-status: draft
+status: completed
 priority: critical
 domain: ANDROID-INIT
 created_at: 2025-11-28
 updated_at: 2025-11-28
 owner: GOOS
+completed_at: 2025-11-28
 dependencies: []
 related_specs: [SPEC-ANDROID-MVI-002, SPEC-ANDROID-INTEGRATION-003]
 tags: [android, mvi, modular, gradle, hilt, compose, setup]
