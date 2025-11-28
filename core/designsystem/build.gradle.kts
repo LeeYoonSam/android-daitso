@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.daitso.android.library)
     alias(libs.plugins.daitso.android.library.compose)
+    alias(libs.plugins.compose.compiler)
 }
 
 dependencies {

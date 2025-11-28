@@ -1,4 +1,4 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -9,17 +9,18 @@ import org.gradle.kotlin.dsl.configure
  * Provides configuration for Compose including:
  * - Compose build feature enabled
  * - Compose compiler options
+ *
+ * Note: This plugin expects the compose-compiler plugin to be applied in the module's build.gradle.kts
  */
 class AndroidLibraryComposeConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
+            // First apply the android library plugin
+            pluginManager.apply("daitso.android.library")
+
             extensions.configure<LibraryExtension> {
                 buildFeatures {
                     compose = true
-                }
-
-                composeOptions {
-                    kotlinCompilerExtensionVersion = "1.5.15"
                 }
             }
         }

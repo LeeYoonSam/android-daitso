@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     // Coroutines for async/threading utilities
-    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
 }

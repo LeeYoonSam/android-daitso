@@ -4,13 +4,13 @@
 
 ```yaml
 spec_id: SPEC-ANDROID-INIT-001
-version: 1.0.0
+version: 1.0.1
 status: completed
 priority: critical
 domain: ANDROID-INIT
 created_at: 2025-11-28
 updated_at: 2025-11-28
-owner: GOOS
+owner: Albert
 completed_at: 2025-11-28
 dependencies: []
 related_specs: [SPEC-ANDROID-MVI-002, SPEC-ANDROID-INTEGRATION-003]
@@ -692,6 +692,12 @@ abstract class DataModule {
 - `gradle/libs.versions.toml`
 
 **변경 이력:**
+- 2025-11-28: v1.0.1 빌드 시스템 완전 재구성 (Albert)
+  - Now in Android 패턴으로 빌드 로직 재작성
+  - JVM 타겟 버전 통일 (Java 17, Kotlin 17)
+  - Convention Plugin 의존성 및 구현 수정
+  - Gradle 8.11.1로 안정화
+  - Android Studio Gradle Sync 성공
 - 2025-11-28: v1.0.0 초안 작성 (GOOS)
 
 ---

@@ -79,5 +79,7 @@
       "cache_ttl_hours": 24
     }
   },
-  "user": {}
+  "user": {
+    "name": "Albert"
+  }
 }
