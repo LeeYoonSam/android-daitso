@@ -1,0 +1,778 @@
+# Daitso 아키텍처 가이드
+
+**SPEC**: SPEC-ANDROID-INIT-001
+**최종 업데이트**: 2025-11-28
+**작성자**: GOOS
+
+---
+
+## 목차
+
+- [개요](#개요)
+- [아키텍처 패턴](#아키텍처-패턴)
+- [레이어별 구조](#레이어별-구조)
+- [모듈 의존성 그래프](#모듈-의존성-그래프)
+- [데이터 흐름](#데이터-흐름)
+- [디렉토리 구조](#디렉토리-구조)
+- [핵심 컴포넌트](#핵심-컴포넌트)
+- [확장 포인트](#확장-포인트)
+- [성능 고려사항](#성능-고려사항)
+
+---
+
+## 개요
+
+Daitso는 다음과 같은 아키텍처 원칙을 따르는 안드로이드 애플리케이션입니다:
+
+1. **Clean Architecture**: 의존성 역전, 계층 분리
+2. **MVI Pattern**: Model-View-Intent 단방향 데이터 흐름
+3. **Modular Design**: 기능별 독립적인 모듈
+4. **Offline-first**: Room을 Single Source of Truth로 사용
+
+### 핵심 특징
+
+| 특징 | 설명 |
+| --- | --- |
+| **단방향 데이터 흐름** | UI → Intent → ViewModel → State → UI |
+| **모듈 독립성** | 모듈 간 느슨한 결합(Loose Coupling) |
+| **타입 안전성** | Kotlin, 의존성 주입, 제네릭 활용 |
+| **오프라인 지원** | 로컬 데이터베이스가 기본 데이터 소스 |
+| **테스트 용이성** | 의존성 주입으로 Mock 객체 쉽게 교체 |
+
+---
+
+## 아키텍처 패턴
+
+### 1. Clean Architecture 계층
+
+```
+┌──────────────────────────────────────────┐
+│         Presentation Layer               │  UI, State Management
+│    (Compose, ViewModel, State)           │
+└──────────────────────────────────────────┘
+           ▲
+           │ (Data Class)
+           ▼
+┌──────────────────────────────────────────┐
+│          Domain Layer                    │  Business Logic
+│      (Use Cases, Repository IF)          │
+└──────────────────────────────────────────┘
+           ▲
+           │ (Repository)
+           ▼
+┌──────────────────────────────────────────┐
+│           Data Layer                     │  Repository Impl
+│    (LocalDataSource, NetworkDataSource)  │
+└──────────────────────────────────────────┘
+           ▲
+           ├─── Remote (Network, API)
+           ├─── Local (Database, Cache)
+           └─── File System
+
+```
+
+### 2. MVI (Model-View-Intent) 패턴
+
+```
+사용자 상호작용 (Click, Input, ...)
+           │
+           ▼
+      ┌─────────┐
+      │ Intent  │  사용자 의도 표현
+      └────┬────┘
+           │
+           ▼
+      ┌──────────────┐
+      │  ViewModel   │  Intent 처리 & 상태 변경
+      │ (Process)    │
+      └────┬─────────┘
+           │
+           ▼
+      ┌───────────┐
+      │ State     │  UI 렌더링용 상태 데이터
+      │ (Model)   │
+      └────┬──────┘
+           │
+           ▼
+      ┌──────────┐
+      │   View   │  상태를 UI로 표현
+      │ (Compose)│
+      └──────────┘
+           │
+           └──► 사용자에게 표시
+
+```
+
+### 3. 데이터 흐름 (Offline-first)
+
+```
+┌─────────────────────────────────────┐
+│         View/ViewModel              │
+│  (UI 요청: getProducts())           │
+└────────────┬────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────┐
+│     ProductRepository               │
+│  (데이터 소스 조정)                   │
+└────────────┬────────────────────────┘
+             │
+      ┌──────┴──────┐
+      ▼             ▼
+┌──────────────┐  ┌────────────────┐
+│ Room         │  │ Retrofit       │
+│ (로컬 DB)    │  │ (네트워크 API) │
+│              │  │                │
+│ [Product]    │  │ [API Response] │
+└──────────────┘  └────────────────┘
+      ▲                    │
+      │                    │
+      └────────┬───────────┘
+               │
+        (캐시 업데이트)
+               │
+               ▼
+         [Flow<Result>]
+               │
+               ▼
+            View
+
+```
+
+---
+
+## 레이어별 구조
+
+### Presentation Layer (UI)
+
+**책임**: 사용자 인터페이스, 상태 관리, 사용자 입력 처리
+
+**구성 요소**:
+- **Compose Screen**: UI 레이아웃 및 렌더링
+- **ViewModel**: 상태 관리 및 Intent 처리
+- **State**: 화면별 상태 데이터 클래스
+- **Event**: 사용자 이벤트 (클릭, 입력 등)
+
+**예시**:
+```kotlin
+// ProductsScreen.kt
+@Composable
+fun ProductsScreen(viewModel: ProductsViewModel) {
+    val state by viewModel.state.collectAsState()
+
+    when (state) {
+        is ProductsState.Loading -> LoadingIndicator()
+        is ProductsState.Success -> ProductList(state.products)
+        is ProductsState.Error -> ErrorView(state.exception)
+    }
+}
+
+// ProductsViewModel.kt
+@HiltViewModel
+class ProductsViewModel @Inject constructor(
+    private val repository: ProductRepository
+) : ViewModel() {
+    private val _state = MutableStateFlow<ProductsState>(ProductsState.Loading)
+    val state = _state.asStateFlow()
+
+    fun loadProducts() {
+        viewModelScope.launch {
+            repository.getProducts().collect { result ->
+                _state.value = when (result) {
+                    is Result.Success -> ProductsState.Success(result.data)
+                    is Result.Error -> ProductsState.Error(result.exception)
+                    Result.Loading -> ProductsState.Loading
+                }
+            }
+        }
+    }
+}
+```
+
+### Domain Layer
+
+**책임**: 비즈니스 로직, 계약(인터페이스) 정의
+
+**구성 요소**:
+- **Repository Interface**: 데이터 접근 계약
+- **Model**: 도메인 엔티티
+- **UseCase** (선택): 비즈니스 흐름 캡슐화
+
+**예시**:
+```kotlin
+// ProductRepository.kt (인터페이스)
+interface ProductRepository {
+    fun getProducts(): Flow<Result<List<Product>>>
+    fun getProduct(id: String): Flow<Result<Product>>
+}
+
+// Product.kt (도메인 모델)
+@Serializable
+data class Product(
+    val id: String,
+    val name: String,
+    val description: String,
+    val price: Double,
+    val imageUrl: String
+)
+```
+
+### Data Layer
+
+**책임**: 데이터 소스 관리, Repository 구현
+
+**구성 요소**:
+- **Repository Implementation**: 도메인 Repository 구현
+- **DataSource**: 원격(Network) 및 로컬(Database) 데이터 소스
+- **Entity**: 데이터베이스 엔티티
+- **DAO**: 데이터베이스 접근 객체
+- **API Service**: REST API 정의
+
+**예시**:
+```kotlin
+// ProductRepositoryImpl.kt
+class ProductRepositoryImpl @Inject constructor(
+    private val networkDataSource: NetworkDataSource,
+    private val localDataSource: LocalDataSource,
+    @Dispatcher(DaitsoDispatchers.IO) private val ioDispatcher: CoroutineDispatcher
+) : ProductRepository {
+    override fun getProducts(): Flow<Result<List<Product>>> = flow {
+        emit(Result.Loading)
+
+        // 1. 로컬 데이터 먼저 반환 (Offline-first)
+        val cachedProducts = localDataSource.getProducts()
+        emit(Result.Success(cachedProducts))
+
+        // 2. 네트워크에서 최신 데이터 가져오기
+        try {
+            val remoteProducts = networkDataSource.getProducts()
+            localDataSource.saveProducts(remoteProducts)
+            emit(Result.Success(remoteProducts))
+        } catch (e: Exception) {
+            emit(Result.Error(e))
+        }
+    }.flowOn(ioDispatcher)
+}
+```
+
+---
+
+## 모듈 의존성 그래프
+
+### 모듈 구조
+
+```
+app (Application Module)
+ │
+ ├─► :core:model
+ ├─► :core:common
+ ├─► :core:designsystem
+ ├─► :core:data
+ │    │
+ │    ├─► :core:model
+ │    ├─► :core:common
+ │    ├─► :core:network
+ │    │    ├─► :core:model
+ │    │    └─► :core:common
+ │    └─► :core:database
+ │         ├─► :core:model
+ │         └─► :core:common
+ └─► :feature:products (향후)
+      ├─► :core:designsystem
+      ├─► :core:data
+      └─► :core:model
+
+```
+
+### 의존성 규칙
+
+1. **상위 → 하위 의존만 허용**
+   ```
+   app → feature → core → (없음)
+   ```
+
+2. **같은 레벨 간 의존 금지**
+   ```
+   :core:network ≠ :core:database  // 직접 의존 불가
+   (Repository를 통한 간접 의존만 가능)
+   ```
+
+3. **원형 의존성 금지**
+   ```
+   A → B → C → A  // 불가능
+   ```
+
+---
+
+## 데이터 흐름
+
+### 타이밍 다이어그램: 상품 목록 조회
+
+```
+시간 흐름 →
+
+ViewModel (ProductsViewModel)
+    │
+    └─► repository.getProducts() 호출
+        │
+        └─► ProductRepositoryImpl
+            │
+            ├─► [Flow 시작]
+            │
+            ├─► emit(Result.Loading)
+            │   └─► ViewModel ◄─ emit 수신
+            │       └─► UI State = Loading
+            │
+            ├─► localDataSource.getProducts()
+            │   └─► CartDao.getCartItems() [Room Query]
+            │       └─► DB 쿼리 실행
+            │           └─► [로컬 데이터 반환]
+            │
+            ├─► emit(Result.Success(localProducts))
+            │   └─► ViewModel ◄─ emit 수신
+            │       └─► UI State = Success(localProducts)
+            │
+            ├─► try {
+            │   ├─► networkDataSource.getProducts()
+            │   │   └─► DaitsoApiService.getProducts()
+            │   │       └─► [네트워크 요청]
+            │   │           └─► [API 응답 수신]
+            │   │
+            │   ├─► localDataSource.saveProducts(remoteProducts)
+            │   │   └─► CartDao.insertProduct()
+            │   │       └─► [DB 저장]
+            │   │
+            │   └─► emit(Result.Success(remoteProducts))
+            │       └─► ViewModel ◄─ emit 수신
+            │           └─► UI State = Success(remoteProducts) [업데이트]
+            │
+            └─► } catch (e: Exception) {
+                ├─► emit(Result.Error(e))
+                │   └─► ViewModel ◄─ emit 수신
+                │       └─► UI State = Error(e)
+                └─► }
+
+```
+
+### Repository 흐름 상세
+
+```
+Repository.getProducts()
+    ▼
+[Flow Builder 시작]
+    ▼
+Step 1: Loading 상태 방출
+    emit(Result.Loading)
+
+Step 2: 로컬 데이터 먼저 방출 (Offline-first)
+    val cached = localDataSource.getProducts()
+    emit(Result.Success(cached))
+
+Step 3: 네트워크 데이터 가져오기
+    try {
+        val remote = networkDataSource.getProducts()
+        localDataSource.saveProducts(remote)  // 캐시 업데이트
+        emit(Result.Success(remote))         // 최신 데이터 방출
+    } catch (e: Exception) {
+        emit(Result.Error(e))                 // 에러 처리
+    }
+
+Step 4: Flow 종료
+    .flowOn(ioDispatcher)  // IO 스레드에서 실행
+
+```
+
+---
+
+## 디렉토리 구조
+
+### Core 모듈 구조
+
+```
+core/
+├── model/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/com/bup/ys/daitso/core/model/
+│       ├── Product.kt           # 상품 도메인 모델
+│       ├── CartItem.kt          # 카트 항목 모델
+│       └── User.kt              # 사용자 모델
+│
+├── common/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/com/bup/ys/daitso/core/common/
+│       ├── result/
+│       │   └── Result.kt        # Result<T> 래퍼
+│       ├── di/
+│       │   └── Dispatcher.kt    # @Dispatcher Annotation
+│       └── logger/
+│           └── Logger.kt        # Logger 유틸리티
+│
+├── designsystem/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/com/bup/ys/daitso/core/designsystem/
+│       ├── theme/
+│       │   ├── Color.kt         # Material3 색상
+│       │   ├── Typography.kt    # 타이포그래피
+│       │   ├── Shape.kt         # 형태(radius)
+│       │   └── DaitsoTheme.kt   # 메인 테마
+│       └── components/
+│           ├── DaitsoButton.kt
+│           ├── DaitsoTextField.kt
+│           ├── DaitsoLoadingIndicator.kt
+│           └── DaitsoErrorView.kt
+│
+├── network/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/com/bup/ys/daitso/core/network/
+│       ├── api/
+│       │   └── DaitsoApiService.kt   # Retrofit 인터페이스
+│       ├── source/
+│       │   └── NetworkDataSource.kt
+│       └── di/
+│           └── NetworkModule.kt      # Hilt 모듈
+│
+├── database/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/com/bup/ys/daitso/core/database/
+│       ├── entity/
+│       │   └── CartItemEntity.kt     # Room 엔티티
+│       ├── dao/
+│       │   └── CartDao.kt            # DAO 인터페이스
+│       ├── DaitsoDatabase.kt         # Database 클래스
+│       └── di/
+│           └── DatabaseModule.kt     # Hilt 모듈
+│
+└── data/
+    ├── build.gradle.kts
+    └── src/main/kotlin/com/bup/ys/daitso/core/data/
+        ├── repository/
+        │   ├── ProductRepository.kt       # 인터페이스
+        │   └── ProductRepositoryImpl.kt   # 구현체
+        └── di/
+            └── DataModule.kt             # Hilt 모듈
+
+```
+
+---
+
+## 핵심 컴포넌트
+
+### 1. Result<T> - 비동기 작업 결과 래퍼
+
+**목적**: Success, Error, Loading 상태를 타입 안전하게 표현
+
+**위치**: `core/common/src/main/kotlin/com/bup/ys/daitso/core/common/result/Result.kt`
+
+```kotlin
+sealed class Result<out T> {
+    data class Success<T>(val data: T) : Result<T>()
+    data class Error(val exception: Throwable) : Result<Nothing>()
+    object Loading : Result<Nothing>()
+}
+
+// 사용 예
+when (result) {
+    is Result.Success -> UI.show(result.data)
+    is Result.Error -> UI.showError(result.exception)
+    Result.Loading -> UI.showLoading()
+}
+```
+
+### 2. @Dispatcher - Coroutine Dispatcher 주입
+
+**목적**: 테스트 시 Dispatcher 교체 용이하게 함
+
+**위치**: `core/common/src/main/kotlin/com/bup/ys/daitso/core/common/di/Dispatcher.kt`
+
+```kotlin
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class Dispatcher(val dispatcher: DaitsoDispatchers)
+
+enum class DaitsoDispatchers {
+    IO,
+    Default,
+    Main
+}
+
+// 사용 예
+class ProductRepositoryImpl @Inject constructor(
+    @Dispatcher(DaitsoDispatchers.IO) private val ioDispatcher: CoroutineDispatcher
+) : ProductRepository {
+    // ...
+}
+```
+
+### 3. DaitsoTheme - Material3 테마
+
+**목적**: 앱 전체 UI 스타일 일관성 유지
+
+**위치**: `core/designsystem/src/main/kotlin/com/bup/ys/daitso/core/designsystem/theme/DaitsoTheme.kt`
+
+```kotlin
+@Composable
+fun DaitsoTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = DaitsoTypography,
+        shapes = DaitsoShapes,
+        content = content
+    )
+}
+```
+
+### 4. DaitsoApiService - REST API 정의
+
+**목적**: Retrofit을 통한 REST API 엔드포인트 정의
+
+**위치**: `core/network/src/main/kotlin/com/bup/ys/daitso/core/network/api/DaitsoApiService.kt`
+
+```kotlin
+interface DaitsoApiService {
+    @GET("products")
+    suspend fun getProducts(): List<Product>
+
+    @GET("products/{id}")
+    suspend fun getProduct(@Path("id") id: String): Product
+}
+```
+
+### 5. DaitsoDatabase - Room 데이터베이스
+
+**목적**: 로컬 데이터 저장소 구성
+
+**위치**: `core/database/src/main/kotlin/com/bup/ys/daitso/core/database/DaitsoDatabase.kt`
+
+```kotlin
+@Database(
+    entities = [CartItemEntity::class],
+    version = 1,
+    exportSchema = false
+)
+abstract class DaitsoDatabase : RoomDatabase() {
+    abstract fun cartDao(): CartDao
+}
+```
+
+---
+
+## 확장 포인트
+
+### 1. Feature 모듈 추가
+
+새로운 기능(예: Products Feature)을 추가하려면:
+
+```
+:feature:products (새 모듈)
+    ├─► :core:model
+    ├─► :core:common
+    ├─► :core:designsystem
+    ├─► :core:data
+    └─► build.gradle.kts
+```
+
+**build.gradle.kts**:
+```kotlin
+plugins {
+    alias(libs.plugins.daitso.android.library.compose)
+    alias(libs.plugins.daitso.android.hilt)
+}
+
+dependencies {
+    implementation(project(":core:model"))
+    implementation(project(":core:common"))
+    implementation(project(":core:designsystem"))
+    implementation(project(":core:data"))
+
+    // Compose & ViewModel
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // ...
+}
+```
+
+### 2. API Endpoint 추가
+
+1. `DaitsoApiService.kt`에 새 메서드 추가:
+```kotlin
+@GET("new-endpoint/{id}")
+suspend fun getNewData(@Path("id") id: String): NewDataModel
+```
+
+2. `NetworkDataSource.kt`에 메서드 추가:
+```kotlin
+interface NetworkDataSource {
+    suspend fun getNewData(id: String): NewDataModel
+}
+```
+
+3. Repository에서 사용:
+```kotlin
+override fun getNewData(id: String): Flow<Result<NewDataModel>> = flow {
+    emit(Result.Loading)
+    try {
+        val remote = networkDataSource.getNewData(id)
+        emit(Result.Success(remote))
+    } catch (e: Exception) {
+        emit(Result.Error(e))
+    }
+}
+```
+
+### 3. Database 엔티티 추가
+
+1. Entity 정의:
+```kotlin
+@Entity(tableName = "orders")
+data class OrderEntity(
+    @PrimaryKey val id: String,
+    val userId: String,
+    val total: Double,
+    val createdAt: Long
+)
+```
+
+2. DAO 정의:
+```kotlin
+@Dao
+interface OrderDao {
+    @Query("SELECT * FROM orders WHERE userId = :userId")
+    fun getUserOrders(userId: String): Flow<List<OrderEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrder(order: OrderEntity)
+}
+```
+
+3. Database에 추가:
+```kotlin
+@Database(
+    entities = [CartItemEntity::class, OrderEntity::class],
+    version = 2,
+    exportSchema = true
+)
+abstract class DaitsoDatabase : RoomDatabase() {
+    abstract fun cartDao(): CartDao
+    abstract fun orderDao(): OrderDao
+}
+```
+
+---
+
+## 성능 고려사항
+
+### 1. 메모리 최적화
+
+**Database 쿼리 최적화**:
+```kotlin
+// 나쁜 예: 모든 데이터 로드
+@Query("SELECT * FROM products")
+fun getAllProducts(): Flow<List<Product>>
+
+// 좋은 예: 필요한 컬럼만 선택
+@Query("SELECT id, name, price FROM products")
+fun getProductSummaries(): Flow<List<ProductSummary>>
+```
+
+**Image Caching (Coil)**:
+```kotlin
+Image(
+    painter = rememberAsyncImagePainter(
+        model = product.imageUrl,
+        contentScale = ContentScale.Crop
+    ),
+    contentDescription = null,
+    modifier = Modifier.size(200.dp)
+)
+```
+
+### 2. 네트워크 최적화
+
+**Request 캐싱**:
+```kotlin
+val okHttpClient = OkHttpClient.Builder()
+    .cache(Cache(cacheDir, 10 * 1024 * 1024)) // 10MB 캐시
+    .addNetworkInterceptor(HttpLoggingInterceptor())
+    .build()
+```
+
+**Pagination (향후)**:
+```kotlin
+@GET("products")
+suspend fun getProducts(
+    @Query("page") page: Int,
+    @Query("limit") limit: Int = 20
+): PagedResponse<Product>
+```
+
+### 3. UI 렌더링 최적화
+
+**LazyColumn 사용**:
+```kotlin
+@Composable
+fun ProductList(products: List<Product>) {
+    LazyColumn {
+        items(products) { product ->
+            ProductItem(product)
+        }
+    }
+}
+```
+
+**State Hoisting (상태 끌어올리기)**:
+```kotlin
+@Composable
+fun ProductsScreen(viewModel: ProductsViewModel) {
+    val state by viewModel.state.collectAsState()
+
+    // View가 아닌 상위에서 상태 관리
+    ProductContent(state = state, onEvent = viewModel::handleEvent)
+}
+
+@Composable
+fun ProductContent(state: ProductsState, onEvent: (ProductsEvent) -> Unit) {
+    // UI 렌더링
+}
+```
+
+---
+
+## 마이그레이션 가이드
+
+### 향후 확장 계획
+
+#### 1단계: Feature 모듈 추가 (근시일)
+- `:feature:products` - 상품 목록, 상세 조회
+- `:feature:cart` - 장바구니 관리
+- `:feature:checkout` - 결제 프로세스
+
+#### 2단계: 고급 기능 (중기)
+- `:feature:auth` - 인증 및 사용자 관리
+- `:feature:orders` - 주문 조회 및 추적
+- `:feature:search` - 검색 및 필터링
+
+#### 3단계: 인프라 개선 (장기)
+- `:core:analytics` - 분석 및 추적
+- `:core:notification` - 푸시 알림
+- `:core:security` - 보안 및 암호화
+
+---
+
+## 참고 자료
+
+- [Android Jetpack 공식 가이드](https://developer.android.com/jetpack)
+- [Compose Documentation](https://developer.android.com/jetpack/compose)
+- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+- [MVI Pattern](https://medium.com/@shelajev/clean-architecture-with-kotlin-coroutines-and-mvvm-part-1-7d0ce2013d8f)
+- [Room Database Guide](https://developer.android.com/training/data-storage/room)
+- [Hilt Dependency Injection](https://dagger.dev/hilt/)
+
+---
+
+**아키텍처 문서 버전**: 1.0.0
+**최종 검토**: 2025-11-28
+**상태**: Active
