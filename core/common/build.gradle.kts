@@ -4,5 +4,8 @@ plugins {
 
 dependencies {
     // Coroutines for async/threading utilities
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+
+    // Hilt for dependency injection (Qualifier)
+    implementation(libs.hilt.android)
 }
