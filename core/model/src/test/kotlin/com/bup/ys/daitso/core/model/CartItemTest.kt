@@ -20,11 +20,11 @@ class CartItemTest {
     fun testCartItemSerialization() {
         // Arrange
         val cartItem = CartItem(
-            id = "1",
             productId = "prod-1",
             productName = "Test Product",
             quantity = 2,
-            price = 10.99
+            price = 10.99,
+            imageUrl = "https://example.com/image.jpg"
         )
 
         // Act
@@ -32,9 +32,9 @@ class CartItemTest {
 
         // Assert
         assertNotNull(json)
-        assert(json.contains("\"id\":\"1\""))
         assert(json.contains("\"productId\":\"prod-1\""))
         assert(json.contains("\"quantity\":2"))
+        assert(json.contains("\"imageUrl\":\"https://example.com/image.jpg\""))
     }
 
     @Test
@@ -42,11 +42,11 @@ class CartItemTest {
         // Arrange
         val jsonString = """
             {
-                "id": "1",
                 "productId": "prod-1",
                 "productName": "Test Product",
                 "quantity": 3,
-                "price": 15.50
+                "price": 15.50,
+                "imageUrl": "https://example.com/image.jpg"
             }
         """.trimIndent()
 
@@ -54,29 +54,29 @@ class CartItemTest {
         val cartItem = Json.decodeFromString<CartItem>(jsonString)
 
         // Assert
-        assertEquals("1", cartItem.id)
         assertEquals("prod-1", cartItem.productId)
         assertEquals("Test Product", cartItem.productName)
         assertEquals(3, cartItem.quantity)
         assertEquals(15.50, cartItem.price)
+        assertEquals("https://example.com/image.jpg", cartItem.imageUrl)
     }
 
     @Test
     fun testCartItemEquality() {
         // Arrange
         val item1 = CartItem(
-            id = "1",
             productId = "prod-1",
             productName = "Test",
             quantity = 2,
-            price = 10.0
+            price = 10.0,
+            imageUrl = "https://example.com/image.jpg"
         )
         val item2 = CartItem(
-            id = "1",
             productId = "prod-1",
             productName = "Test",
             quantity = 2,
-            price = 10.0
+            price = 10.0,
+            imageUrl = "https://example.com/image.jpg"
         )
 
         // Assert
@@ -87,11 +87,11 @@ class CartItemTest {
     fun testCartItemTotalPrice() {
         // Arrange
         val cartItem = CartItem(
-            id = "1",
             productId = "prod-1",
             productName = "Test Product",
             quantity = 5,
-            price = 10.0
+            price = 10.0,
+            imageUrl = "https://example.com/image.jpg"
         )
 
         // Act

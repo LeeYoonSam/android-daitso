@@ -24,7 +24,8 @@ class ProductTest {
             name = "Test Product",
             description = "A test product",
             price = 10.99,
-            imageUrl = "https://example.com/image.jpg"
+            imageUrl = "https://example.com/image.jpg",
+            category = "Electronics"
         )
 
         // Act
@@ -34,6 +35,7 @@ class ProductTest {
         assertNotNull(json)
         assert(json.contains("\"id\":\"1\""))
         assert(json.contains("\"name\":\"Test Product\""))
+        assert(json.contains("\"category\":\"Electronics\""))
     }
 
     @Test
@@ -45,7 +47,8 @@ class ProductTest {
                 "name": "Test Product",
                 "description": "A test product",
                 "price": 10.99,
-                "imageUrl": "https://example.com/image.jpg"
+                "imageUrl": "https://example.com/image.jpg",
+                "category": "Electronics"
             }
         """.trimIndent()
 
@@ -58,6 +61,7 @@ class ProductTest {
         assertEquals("A test product", product.description)
         assertEquals(10.99, product.price)
         assertEquals("https://example.com/image.jpg", product.imageUrl)
+        assertEquals("Electronics", product.category)
     }
 
     @Test
@@ -68,14 +72,16 @@ class ProductTest {
             name = "Test Product",
             description = "A test product",
             price = 10.99,
-            imageUrl = "https://example.com/image.jpg"
+            imageUrl = "https://example.com/image.jpg",
+            category = "Electronics"
         )
         val product2 = Product(
             id = "1",
             name = "Test Product",
             description = "A test product",
             price = 10.99,
-            imageUrl = "https://example.com/image.jpg"
+            imageUrl = "https://example.com/image.jpg",
+            category = "Electronics"
         )
 
         // Assert
@@ -90,7 +96,8 @@ class ProductTest {
             name = "Premium Product",
             description = "High quality item",
             price = 99.99,
-            imageUrl = "https://example.com/premium.jpg"
+            imageUrl = "https://example.com/premium.jpg",
+            category = "Luxury"
         )
 
         // Assert
@@ -99,5 +106,6 @@ class ProductTest {
         assertEquals("High quality item", product.description)
         assertEquals(99.99, product.price)
         assertEquals("https://example.com/premium.jpg", product.imageUrl)
+        assertEquals("Luxury", product.category)
     }
 }
