@@ -98,6 +98,45 @@
   - 검증 체크리스트
   - 다음 단계 계획
 
+---
+
+## Phase 4: MVI UI 아키텍처
+
+### 새로운 문서
+
+#### 1. Core UI 모듈 가이드
+- **[modules/CORE_UI_README.md](modules/CORE_UI_README.md)** (신규)
+  - MVI 패턴 상세 설명
+  - BaseViewModel 구조 및 사용법
+  - UiState/Event/SideEffect 인터페이스
+  - Type-safe Navigation (Routes)
+  - 사용 예시 및 코드 샘플
+  - 테스트 작성 방법
+  - 문제 해결 가이드
+
+#### 2. 아키텍처 문서 업데이트
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** (Phase 4 섹션 추가)
+  - Phase 4 MVI UI 아키텍처
+  - UI 상태 관리 흐름 다이어그램
+  - BaseViewModel 패턴
+  - Feature ViewModel 구현 예시
+  - Compose 통합 예시
+  - 의존성 흐름 및 모듈 구조
+
+### SPEC 문서
+
+#### SPEC-ANDROID-MVI-002 (Phase 4 관련)
+- **[../specs/SPEC-ANDROID-MVI-002/plan.md](../specs/SPEC-ANDROID-MVI-002/plan.md)** (v1.0.1)
+  - Phase 1~4 구현 완료 현황
+  - 테스트 결과 (104줄, 12개 이상)
+  - AC 진행률 (3/4 PASSED)
+
+- **[../specs/SPEC-ANDROID-MVI-002/acceptance.md](../specs/SPEC-ANDROID-MVI-002/acceptance.md)** (v1.0.1)
+  - AC 검증 결과 상세 분석
+  - 각 AC별 PASSED/PENDING 상태
+  - 코드 품질 메트릭
+  - 최종 서명 및 승인
+
 ### SPEC 문서 업데이트
 
 #### SPEC-ANDROID-INIT-001 최종 버전
