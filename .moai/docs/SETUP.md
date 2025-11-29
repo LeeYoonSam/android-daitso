@@ -353,6 +353,312 @@ cd /Users/leeyoonsam/Documents/android-mvi-modular
 
 ---
 
+## Phase 2: Core 모듈 설정
+
+### Core 모듈 의존성 설정
+
+Phase 2에서 구현된 6개의 Core 모듈은 다음과 같이 설정되어 있습니다:
+
+#### :core:model 설정
+```kotlin
+// core/model/build.gradle.kts
+plugins {
+    alias(libs.plugins.daitso.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+}
+
+dependencies {
+    implementation(libs.kotlinx.serialization.json)
+}
+```
+
+#### :core:common 설정
+```kotlin
+// core/common/build.gradle.kts
+plugins {
+    alias(libs.plugins.daitso.kotlin.jvm)
+}
+
+dependencies {
+    implementation(project(":core:model"))
+    implementation(libs.hilt.android)
+    implementation(libs.kotlinx.coroutines.core)
+}
+```
+
+#### :core:designsystem 설정
+```kotlin
+// core/designsystem/build.gradle.kts
+plugins {
+    alias(libs.plugins.daitso.android.library)
+    alias(libs.plugins.daitso.android.library.compose)
+}
+
+dependencies {
+    implementation(project(":core:common"))
+    implementation(libs.androidx.compose.material3)
+}
+```
+
+#### :core:network 설정
+```kotlin
+// core/network/build.gradle.kts
+plugins {
+    alias(libs.plugins.daitso.android.library)
+    alias(libs.plugins.daitso.android.hilt)
+    alias(libs.plugins.kotlin.serialization)
+}
+
+dependencies {
+    implementation(project(":core:model"))
+    implementation(project(":core:common"))
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlin.serialization)
+    implementation(libs.okhttp.logging.interceptor)
+}
+```
+
+#### :core:database 설정
+```kotlin
+// core/database/build.gradle.kts
+plugins {
+    alias(libs.plugins.daitso.android.library)
+    alias(libs.plugins.daitso.android.hilt)
+    alias(libs.plugins.ksp)
+}
+
+dependencies {
+    implementation(project(":core:model"))
+    implementation(project(":core:common"))
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+}
+```
+
+#### :core:data 설정
+```kotlin
+// core/data/build.gradle.kts
+plugins {
+    alias(libs.plugins.daitso.android.library)
+    alias(libs.plugins.daitso.android.hilt)
+}
+
+dependencies {
+    implementation(project(":core:model"))
+    implementation(project(":core:common"))
+    implementation(project(":core:network"))
+    implementation(project(":core:database"))
+    implementation(libs.kotlinx.coroutines.android)
+}
+```
+
+### Gradle 빌드 설정 (KSP/Hilt)
+
+KSP (Kotlin Symbol Processing)는 Kapt보다 2배 빠른 빌드를 제공합니다:
+
+#### 1. build.gradle.kts에서 KSP 적용
+```kotlin
+plugins {
+    alias(libs.plugins.ksp)
+}
+
+dependencies {
+    ksp(libs.hilt.compiler)
+    ksp(libs.room.compiler)
+}
+```
+
+#### 2. Convention Plugin으로 자동 설정
+```kotlin
+// daitso.android.hilt Convention Plugin에 포함
+plugins {
+    apply("com.google.devtools.ksp")
+}
+```
+
+### Room Database 설정
+
+#### 1. Entity 정의
+```kotlin
+@Entity(tableName = "cart_items")
+data class CartItemEntity(
+    @PrimaryKey val productId: String,
+    val productName: String,
+    val quantity: Int,
+    val price: Double,
+    val imageUrl: String
+)
+```
+
+#### 2. DAO 구현
+```kotlin
+@Dao
+interface CartDao {
+    @Query("SELECT * FROM cart_items")
+    fun getCartItems(): Flow<List<CartItemEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCartItem(item: CartItemEntity)
+}
+```
+
+#### 3. Database 클래스
+```kotlin
+@Database(entities = [CartItemEntity::class], version = 1)
+abstract class DaitsoDatabase : RoomDatabase() {
+    abstract fun cartDao(): CartDao
+}
+```
+
+#### 4. Hilt 모듈 설정
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): DaitsoDatabase {
+        return Room.databaseBuilder(context, DaitsoDatabase::class.java, "daitso.db")
+            .build()
+    }
+}
+```
+
+### Retrofit/OkHttp 설정
+
+#### 1. Retrofit 빌드
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addLoggingInterceptor()  // 개발 환경에서만 활성화
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.daitso.com/")
+            .client(okHttpClient)
+            .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+            .build()
+    }
+}
+```
+
+#### 2. Logging Interceptor 설정
+```kotlin
+// 개발 환경에서만 활성화
+private fun OkHttpClient.Builder.addLoggingInterceptor() = apply {
+    if (BuildConfig.DEBUG) {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        addNetworkInterceptor(loggingInterceptor)
+    }
+}
+```
+
+### 테스트 실행: Core 모듈
+
+#### Unit Test 실행
+```bash
+# 모든 모듈 테스트
+./gradlew test
+
+# 특정 모듈 테스트
+./gradlew :core:model:test
+./gradlew :core:common:test
+./gradlew :core:network:test
+./gradlew :core:database:test
+./gradlew :core:data:test
+
+# 테스트 커버리지 보고서
+./gradlew testDebugUnitTestCoverageVerification
+```
+
+#### 테스트 항목
+
+**:core:model**
+- Product, CartItem, User 직렬화/역직렬화 테스트
+
+**:core:common**
+- Result<T> 상태 전환 테스트
+- Dispatcher 주입 테스트
+
+**:core:network**
+- Mock 서버 API 호출 테스트
+- Interceptor 동작 테스트
+
+**:core:database**
+- Room DAO CRUD 테스트
+- InMemory Database 사용
+
+**:core:data**
+- Repository Offline-first 동작 테스트
+- 데이터 소스 통합 테스트
+
+### API 설정
+
+#### 1. API Base URL 관리 (권장)
+
+**방법 1: BuildConfig 사용**
+```kotlin
+// app/build.gradle.kts
+android {
+    buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"https://api.daitso.com/\"")
+        }
+        release {
+            buildConfigField("String", "API_BASE_URL", "\"https://api.daitso.com/\"")
+        }
+    }
+}
+
+// NetworkModule에서
+fun provideRetrofit(): Retrofit {
+    return Retrofit.Builder()
+        .baseUrl(BuildConfig.API_BASE_URL)
+        .build()
+}
+```
+
+**방법 2: local.properties 사용**
+```properties
+# local.properties
+api.base.url=https://api.daitso.com/
+api.timeout=30
+```
+
+#### 2. API 서비스 정의
+```kotlin
+interface DaitsoApiService {
+    @GET("products")
+    suspend fun getProducts(): List<Product>
+
+    @GET("products/{id}")
+    suspend fun getProduct(@Path("id") id: String): Product
+}
+```
+
+#### 3. Retrofit 클라이언트 생성
+```kotlin
+@Provides
+@Singleton
+fun provideApiService(retrofit: Retrofit): DaitsoApiService {
+    return retrofit.create(DaitsoApiService::class.java)
+}
+```
+
+---
+
 ## 빌드 및 실행
 
 ### 빌드 타입
