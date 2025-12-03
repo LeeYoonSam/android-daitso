@@ -4,14 +4,15 @@
 
 ```yaml
 spec_id: SPEC-ANDROID-FEATURE-HOME-001
-version: 1.0.0
-status: pending
+version: 1.1.0
+status: completed
 priority: high
 domain: ANDROID-FEATURE
 created_at: 2025-11-29
-updated_at: 2025-11-29
+updated_at: 2025-12-03
 owner: Team
-completed_at: null
+completed_at: 2025-12-03
+implementation_branch: feature/SPEC-ANDROID-FEATURE-HOME-001
 dependencies: [SPEC-ANDROID-INIT-001, SPEC-ANDROID-MVI-002]
 related_specs: [SPEC-ANDROID-FEATURE-DETAIL-001, SPEC-ANDROID-FEATURE-CART-001, SPEC-ANDROID-INTEGRATION-003]
 tags: [android, mvi, feature, home, compose, network, state-management]
