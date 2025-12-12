@@ -1,9 +1,9 @@
 # Daitso 문서 인덱스
 
-**최종 업데이트**: 2025-11-29
+**최종 업데이트**: 2025-12-12
 **프로젝트**: Android MVI Modular
 **SPEC**: SPEC-ANDROID-INIT-001
-**Phase 상태**: Phase 1-3 완료, Phase 4 준비 중
+**Phase 상태**: Phase 1-4 진행 중 (Cart Feature 구현 완료)
 
 ---
 
@@ -100,7 +100,7 @@
 
 ---
 
-## Phase 4: MVI UI 아키텍처
+## Phase 4: MVI UI 아키텍처 및 Feature 모듈
 
 ### 새로운 문서
 
@@ -114,7 +114,57 @@
   - 테스트 작성 방법
   - 문제 해결 가이드
 
-#### 2. 아키텍처 문서 업데이트
+#### 2. Feature 모듈 가이드
+
+##### Home Feature (:feature:home)
+- **[FEATURE_HOME.md](FEATURE_HOME.md)** (v1.0.0)
+  - Home Feature 아키텍처 및 화면 구조
+  - HomeContract, HomeViewModel, HomeScreen 구현
+  - 상품 목록 조회 및 상태 관리
+  - Compose UI 컴포넌트 (LazyColumn, ProductCard)
+  - 테스트 전략 및 테스트 케이스
+  - 네비게이션 및 의존성 주입
+
+- **[HOME_API_REFERENCE.md](HOME_API_REFERENCE.md)** (v1.0.0)
+  - HomeUiState API 문서
+  - HomeIntent, HomeSideEffect 명세
+  - HomeViewModel 메서드
+  - HomeScreen Composable 파라미터 문서
+
+##### Cart Feature (:feature:cart)
+- **[FEATURE_CART.md](FEATURE_CART.md)** (신규, v1.0.0)
+  - Cart Feature 아키텍처 및 기능 설명
+  - CartContract, CartViewModel, CartScreen 구현
+  - MVI 패턴 적용 상세 분석
+  - Room Database 통합
+  - Compose UI (CartItemRow, QuantityControl, CartSummary)
+  - 장바구니 상태 관리 및 총 가격 계산
+  - 테스트 전략 (Unit Test, UI Test)
+
+- **[CART_API_REFERENCE.md](CART_API_REFERENCE.md)** (신규, v1.0.0)
+  - CartUiState API 문서
+  - CartIntent 모든 Intent 타입 명세
+  - CartSideEffect 타입 정의
+  - CartViewModel 메서드 API
+  - CartScreen Composable 파라미터 문서
+  - CartItem 데이터 모델
+
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** (신규, v1.0.0)
+  - Feature 모듈 개발 패턴 및 체크리스트
+  - MVI 패턴 구현 가이드
+  - Room Database 통합 방법
+  - Compose UI 개발 베스트 프랙티스
+  - 테스트 작성 지침 (Unit, Integration, UI)
+  - 성능 최적화 고려사항
+  - 일반적인 문제 해결
+
+- **[FEATURE_API_INDEX.md](FEATURE_API_INDEX.md)** (신규, v1.0.0)
+  - 모든 Feature 모듈 개요 테이블
+  - 각 Feature의 주요 기능 요약
+  - Feature 간 네비게이션 포인트
+  - 의존성 관계 및 통합 포인트
+
+#### 3. 아키텍처 문서 업데이트
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** (Phase 4 섹션 추가)
   - Phase 4 MVI UI 아키텍처
   - UI 상태 관리 흐름 다이어그램
@@ -311,6 +361,6 @@ android-mvi-modular/
 
 **노트**: 이 인덱스는 문서가 추가/수정될 때마다 업데이트됩니다.
 
-**최종 업데이트**: 2025-11-28
+**최종 업데이트**: 2025-12-12
 **유지관리자**: GOOS
-**상태**: Active Development
+**상태**: Active Development (Cart Feature 문서화 진행)
