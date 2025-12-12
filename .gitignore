@@ -86,3 +86,11 @@ docs/out/
 .uv_cache
 .uv-cache
 .venv_issue43_py313
+
+# Android/Gradle cache (local build artifacts)
+.gradle/
+build-logic/.gradle/
+local.properties
+
+# MoAI cache (auto-generated)
+.moai/cache/
