@@ -14,6 +14,7 @@ import com.bup.ys.daitso.core.model.CartItem
  * @param productName Name of the product
  * @param quantity Quantity in cart
  * @param price Unit price
+ * @param imageUrl URL of the product image
  */
 @Entity(tableName = "cart_items")
 data class CartItemEntity(
@@ -22,7 +23,8 @@ data class CartItemEntity(
     val productId: String,
     val productName: String,
     val quantity: Int,
-    val price: Double
+    val price: Double,
+    val imageUrl: String = ""
 )
 
 /**
@@ -30,20 +32,20 @@ data class CartItemEntity(
  */
 fun CartItemEntity.toDomainModel(): CartItem {
     return CartItem(
-        id = id,
         productId = productId,
         productName = productName,
         quantity = quantity,
-        price = price
+        price = price,
+        imageUrl = imageUrl
     )
 }
 
 /**
  * Convert CartItem domain model to CartItemEntity.
  */
-fun CartItem.toEntity(): CartItemEntity {
+fun CartItem.toEntity(id: String? = null): CartItemEntity {
     return CartItemEntity(
-        id = id,
+        id = id ?: "${productId}_${System.currentTimeMillis()}",
         productId = productId,
         productName = productName,
         quantity = quantity,

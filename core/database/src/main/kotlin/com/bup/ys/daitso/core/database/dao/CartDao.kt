@@ -72,4 +72,12 @@ interface CartDao {
      */
     @Query("SELECT * FROM cart_items WHERE productId = :productId")
     fun getCartItemsByProductId(productId: String): Flow<List<CartItemEntity>>
+
+    /**
+     * Deletes a cart item by product ID.
+     *
+     * @param productId The product ID to delete
+     */
+    @Query("DELETE FROM cart_items WHERE productId = :productId")
+    suspend fun deleteByProductId(productId: String)
 }
