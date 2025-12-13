@@ -8,16 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.icons.Icons
-import androidx.compose.ui.icons.filled.Add
-import androidx.compose.ui.icons.filled.Remove
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,8 +56,8 @@ fun QuantitySelector(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Decrease button
-        QuantitySelectorButton(
-            icon = Icons.Default.Remove,
+        QuantitySelectorTextButton(
+            text = "-",
             contentDescription = "Decrease quantity",
             onClick = {
                 val newQuantity = (quantity - 1).coerceAtLeast(minQuantity)
@@ -81,8 +79,8 @@ fun QuantitySelector(
         )
 
         // Increase button
-        QuantitySelectorButton(
-            icon = Icons.Default.Add,
+        QuantitySelectorTextButton(
+            text = "+",
             contentDescription = "Increase quantity",
             onClick = {
                 val newQuantity = (quantity + 1).coerceAtMost(maxQuantity)
@@ -95,24 +93,25 @@ fun QuantitySelector(
 }
 
 /**
- * Button component used within QuantitySelector.
+ * Text button component used within QuantitySelector.
  */
 @Composable
-private fun QuantitySelectorButton(
-    icon: ImageVector,
+private fun QuantitySelectorTextButton(
+    text: String,
     contentDescription: String,
     onClick: () -> Unit,
     testTag: String,
     enabled: Boolean = true
 ) {
-    Icon(
-        imageVector = icon,
-        contentDescription = contentDescription,
+    Text(
+        text = text,
         modifier = Modifier
-            .size(36.dp)
+            .size(width = 36.dp, height = 36.dp)
             .testTag(testTag)
             .clickable(enabled = enabled) { onClick() }
             .padding(8.dp),
-        tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+        style = MaterialTheme.typography.labelLarge,
+        color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+        textAlign = TextAlign.Center
     )
 }
