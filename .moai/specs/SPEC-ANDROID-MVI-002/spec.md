@@ -1,9 +1,10 @@
 ---
 id: SPEC-ANDROID-MVI-002
-version: 1.0.0
-status: draft
+version: 1.0.1
+status: completed
 created: 2025-11-29
-updated: 2025-11-29
+updated: 2025-12-13
+completed_at: 2025-12-13
 author: Albert (@user)
 priority: high
 related_specs: [SPEC-ANDROID-INIT-001, SPEC-ANDROID-FEATURE-HOME-001]
@@ -16,6 +17,7 @@ related_specs: [SPEC-ANDROID-INIT-001, SPEC-ANDROID-FEATURE-HOME-001]
 | 일자 | 버전 | 작성자 | 내용 |
 |------|------|--------|------|
 | 2025-11-29 | 1.0.0 | Albert (@user) | 최초 작성 - MVI 아키텍처 기본 구조 정의 |
+| 2025-12-13 | 1.0.1 | R2-D2 | 구현 완료 - 28개 테스트 통과, TRUST 5 검증 완료 |
 
 ## 1. 개요 (Overview)
 
