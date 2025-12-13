@@ -1,11 +1,17 @@
 plugins {
     alias(libs.plugins.daitso.android.library.compose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
     id("jacoco")
 }
 
 android {
     namespace = "com.bup.ys.daitso.feature.detail"
+
+    kotlinOptions {
+        freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+    }
 }
 
 dependencies {
@@ -33,6 +39,11 @@ dependencies {
 
     // Image loading
     implementation(libs.coil.compose)
+
+    // Hilt Dependency Injection
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    ksp(libs.hilt.compiler)
 
     // Testing
     testImplementation(libs.junit)
