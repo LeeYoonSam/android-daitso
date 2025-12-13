@@ -1,9 +1,9 @@
 # Daitso 문서 인덱스
 
-**최종 업데이트**: 2025-12-12
+**최종 업데이트**: 2025-12-13
 **프로젝트**: Android MVI Modular
 **SPEC**: SPEC-ANDROID-INIT-001
-**Phase 상태**: Phase 1-4 진행 중 (Cart Feature 구현 완료)
+**Phase 상태**: Phase 1-4 진행 중 (Detail Feature 문서화 완료)
 
 ---
 
@@ -163,6 +163,25 @@
   - 각 Feature의 주요 기능 요약
   - Feature 간 네비게이션 포인트
   - 의존성 관계 및 통합 포인트
+
+##### Detail Feature (:feature:detail)
+- **[FEATURE_DETAIL.md](FEATURE_DETAIL.md)** (신규, v1.0.0, 2025-12-13)
+  - Detail Feature 아키텍처 및 상품 상세 화면 구조
+  - ProductDetailContract, ProductDetailViewModel, ProductDetailScreen 구현
+  - MVI 패턴 상세 분석
+  - 수량 선택 및 장바구니 추가 기능
+  - Compose UI 컴포넌트 (ProductInfoSection, QuantitySelector, AddToCartButton)
+  - 테스트 전략 (Unit Test, Compose UI Test)
+  - 네비게이션 및 의존성 주입
+
+- **[DETAIL_API_REFERENCE.md](DETAIL_API_REFERENCE.md)** (신규, v1.0.0, 2025-12-13)
+  - ProductDetailUiState API 문서
+  - ProductDetailIntent 모든 Intent 타입 명세
+  - ProductDetailSideEffect 타입 정의
+  - ProductDetailViewModel 메서드 API
+  - UI Components 파라미터 문서 (ProductDetailScreen, QuantitySelector, AddToCartButton)
+  - CartRepository 인터페이스
+  - 네비게이션 경로 및 딥링크 정의
 
 #### 3. 아키텍처 문서 업데이트
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** (Phase 4 섹션 추가)
@@ -361,6 +380,6 @@ android-mvi-modular/
 
 **노트**: 이 인덱스는 문서가 추가/수정될 때마다 업데이트됩니다.
 
-**최종 업데이트**: 2025-12-12
+**최종 업데이트**: 2025-12-13
 **유지관리자**: GOOS
-**상태**: Active Development (Cart Feature 문서화 진행)
+**상태**: Active Development (Detail Feature 문서화 완료)

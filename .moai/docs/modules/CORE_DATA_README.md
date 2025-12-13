@@ -542,5 +542,116 @@ fun getProducts(): List<Product>  // 예외 처리 어려움
 
 ---
 
-**최종 업데이트**: 2025-11-28
-**SPEC 기반**: SPEC-ANDROID-INIT-001
+---
+
+## 데이터 계층 개선 (2025-12-13)
+
+### LocalDataSourceImpl 에러 처리 강화
+
+LocalDataSourceImpl의 예외 처리 로직이 개선되어 더욱 견고한 에러 처리를 제공합니다.
+
+**개선 사항:**
+
+#### 1. Try-Catch 블록 강화
+
+```kotlin
+// 변경 전: 기본 예외 처리
+override fun addToCart(item: CartItem): Flow<Result<Unit>> = flow {
+    emit(Result.Loading())
+    try {
+        cartDao.insertCartItem(item.toEntity())
+        emit(Result.Success(Unit))
+    } catch (e: Exception) {
+        emit(Result.Error(e))
+    }
+}
+
+// 변경 후: 세분화된 예외 처리
+override fun addToCart(item: CartItem): Flow<Result<Unit>> = flow {
+    emit(Result.Loading())
+    try {
+        if (item.quantity <= 0) {
+            emit(Result.Error(IllegalArgumentException("수량은 1개 이상이어야 합니다")))
+            return@flow
+        }
+
+        cartDao.insertCartItem(item.toEntity())
+        emit(Result.Success(Unit))
+        Logger.i(TAG, "Item added to cart: ${item.productId}")
+    } catch (e: SQLiteException) {
+        Logger.e(TAG, "Database error while adding to cart", e)
+        emit(Result.Error(DataException("장바구니 저장 실패: ${e.message}")))
+    } catch (e: Exception) {
+        Logger.e(TAG, "Unexpected error while adding to cart", e)
+        emit(Result.Error(e))
+    }
+}
+```
+
+#### 2. 네트워크-로컬 동기화 에러 처리
+
+```kotlin
+// 장바구니 동기화 시 에러 처리 개선
+override fun syncCartWithServer(): Flow<Result<Unit>> = flow {
+    emit(Result.Loading())
+
+    try {
+        // 로컬 데이터 먼저 확인
+        val localItems = try {
+            cartDao.getCartItems().first()
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to read local cart", e)
+            emptyList()  // 로컬 실패해도 계속 진행
+        }
+
+        // 네트워크 동기화 시도
+        try {
+            val remoteItems = networkDataSource.getCart()
+            // 데이터 머지 로직
+            val mergedItems = mergeCartItems(localItems, remoteItems)
+            cartDao.updateCartItems(mergedItems)
+            emit(Result.Success(Unit))
+        } catch (e: NetworkException) {
+            Logger.w(TAG, "Network sync failed, using local data", e)
+            emit(Result.Success(Unit))  // 로컬 데이터로 계속
+        }
+    } catch (e: Exception) {
+        Logger.e(TAG, "Cart sync error", e)
+        emit(Result.Error(e))
+    }
+}
+```
+
+#### 3. 리소스 정리 및 타임아웃
+
+```kotlin
+// 데이터 로드 시 타임아웃 적용
+override fun getCartItems(): Flow<Result<List<CartItem>>> = flow {
+    emit(Result.Loading())
+
+    try {
+        withTimeoutOrNull(5000) {  // 5초 타임아웃
+            cartDao.getCartItems().collect { items ->
+                emit(Result.Success(items.map { it.toDomainModel() }))
+            }
+        } ?: run {
+            Logger.w(TAG, "Cart loading timed out")
+            emit(Result.Error(TimeoutException("데이터 로드 타임아웃")))
+        }
+    } catch (e: Exception) {
+        Logger.e(TAG, "Error loading cart items", e)
+        emit(Result.Error(e))
+    }
+}.flowOn(ioDispatcher)
+```
+
+**개선 효과:**
+- **더 명확한 에러 메시지**: 사용자에게 이해하기 쉬운 에러 메시지 제공
+- **로깅 강화**: 문제 디버깅을 위한 상세 로그 기록
+- **우아한 실패(Graceful Degradation)**: 네트워크 실패 시에도 로컬 데이터 사용 가능
+- **타임아웃 처리**: 무한 대기 방지
+
+---
+
+**최종 업데이트**: 2025-12-13
+**SPEC 기반**: SPEC-ANDROID-FEATURE-DETAIL-001

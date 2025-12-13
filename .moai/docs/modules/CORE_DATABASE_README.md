@@ -42,7 +42,8 @@ core/database/
 ```kotlin
 @Entity(tableName = "cart_items")
 data class CartItemEntity(
-    @PrimaryKey val productId: String,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val productId: String,
     val productName: String,
     val quantity: Int,
     val price: Double,
@@ -67,7 +68,8 @@ data class CartItemEntity(
 
 ```sql
 CREATE TABLE cart_items (
-    productId TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    productId TEXT NOT NULL,
     productName TEXT NOT NULL,
     quantity INTEGER NOT NULL,
     price REAL NOT NULL,
@@ -463,5 +465,77 @@ override fun addToCart(item: CartItem): Flow<Result<Unit>> = flow {
 
 ---
 
-**최종 업데이트**: 2025-11-28
-**SPEC 기반**: SPEC-ANDROID-INIT-001
+---
+
+## 데이터베이스 스키마 업데이트 (2025-12-13)
+
+### CartItemEntity 필드 추가
+
+CartItemEntity에 ID 필드가 추가되어 엔티티의 고유 식별성이 강화되었습니다.
+
+**신규 필드:**
+- **필드명**: `id`
+- **타입**: `Int`
+- **특성**: Primary Key, Auto-increment
+- **기본값**: 0
+- **용도**: 각 장바구니 항목의 고유 식별자
+
+**변경 사항:**
+
+```kotlin
+// 변경 전
+@Entity(tableName = "cart_items")
+data class CartItemEntity(
+    @PrimaryKey val productId: String,  // productId를 Primary Key로 사용
+    // ...
+)
+
+// 변경 후
+@Entity(tableName = "cart_items")
+data class CartItemEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,  // 새 Primary Key
+    val productId: String,  // 이제 일반 필드
+    // ...
+)
+```
+
+### CartDao 신규 메서드
+
+다음 메서드가 CartDao 인터페이스에 추가될 수 있습니다:
+
+```kotlin
+@Dao
+interface CartDao {
+    // ... 기존 메서드 ...
+
+    // 신규: ID로 항목 조회
+    @Query("SELECT * FROM cart_items WHERE id = :id")
+    suspend fun getCartItemById(id: Int): CartItemEntity?
+
+    // 신규: ID로 항목 삭제
+    @Query("DELETE FROM cart_items WHERE id = :id")
+    suspend fun deleteCartItemById(id: Int)
+
+    // 신규: 마지막 삽입된 항목의 ID 반환
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCartItemAndReturnId(item: CartItemEntity): Long
+}
+```
+
+**사용 예시:**
+
+```kotlin
+// ID로 항목 조회
+val item = cartDao.getCartItemById(1)
+
+// ID로 항목 삭제
+cartDao.deleteCartItemById(1)
+
+// 항목 삽입 후 생성된 ID 반환
+val newId = cartDao.insertCartItemAndReturnId(cartItemEntity)
+```
+
+---
+
+**최종 업데이트**: 2025-12-13
+**SPEC 기반**: SPEC-ANDROID-FEATURE-DETAIL-001

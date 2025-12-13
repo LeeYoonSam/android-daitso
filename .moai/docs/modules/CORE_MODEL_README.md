@@ -41,7 +41,8 @@ data class Product(
     val name: String,
     val description: String,
     val price: Double,
-    val imageUrl: String
+    val imageUrl: String,
+    val stock: Int = 0
 )
 ```
 
@@ -49,6 +50,14 @@ data class Product(
 - 상품 정보를 나타내는 데이터 클래스
 - API 응답과 로컬 데이터베이스에서 사용
 - Kotlin Serialization으로 JSON 직렬화/역직렬화 지원
+
+**필드 설명:**
+- `id`: 상품 고유 식별자
+- `name`: 상품명
+- `description`: 상품 설명
+- `price`: 상품 가격
+- `imageUrl`: 상품 이미지 URL
+- `stock`: 상품의 현재 재고 수량 (기본값: 0, 범위: 0 이상)
 
 **사용 예시:**
 
@@ -58,7 +67,8 @@ val product = Product(
     name = "상품명",
     description = "상품 설명",
     price = 29999.0,
-    imageUrl = "https://example.com/image.jpg"
+    imageUrl = "https://example.com/image.jpg",
+    stock = 50
 )
 ```
 
@@ -307,5 +317,40 @@ class ProductTest {
 
 ---
 
-**최종 업데이트**: 2025-11-28
-**SPEC 기반**: SPEC-ANDROID-INIT-001
+---
+
+## Product 모델 확장 (2025-12-13)
+
+### 신규 필드: stock
+
+`stock` 필드가 Product 모델에 추가되었습니다. 이는 상품 상세 화면에서 재고 수량을 표시하기 위해 필요합니다.
+
+**필드 상세:**
+- **필드명**: `stock`
+- **타입**: `Int`
+- **기본값**: `0`
+- **범위**: 0 이상 (음수 불가)
+- **용도**: 상품 상세 화면에서 재고 표시 및 장바구니 추가 가능 여부 판단
+- **업데이트 일시**: 2025-12-13
+
+**사용 시나리오:**
+
+```kotlin
+// 상품 상세 화면에서 재고 표시
+if (product.stock > 0) {
+    Text("재고: ${product.stock}개")
+    Button(onClick = { /* 장바구니 추가 */ }) {
+        Text("장바구니 추가")
+    }
+} else {
+    Text("품절")
+    Button(onClick = { /* 재입고 알림 */ }, enabled = false) {
+        Text("장바구니 추가")
+    }
+}
+```
+
+---
+
+**최종 업데이트**: 2025-12-13
+**SPEC 기반**: SPEC-ANDROID-FEATURE-DETAIL-001
