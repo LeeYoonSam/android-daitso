@@ -23,6 +23,7 @@ object HomeContract {
      * - Loading: 데이터 로드 중
      * - Success: 데이터 로드 성공 (상품 리스트 포함)
      * - Error: 데이터 로드 실패 (에러 메시지 포함)
+     * - Refreshing: Pull-to-Refresh 중
      */
     sealed interface HomeState : UiState {
         /**
@@ -39,8 +40,12 @@ object HomeContract {
          * 성공 상태: 상품 데이터를 성공적으로 로드함
          *
          * @property products 로드된 상품 리스트
+         * @property isRefreshing Pull-to-Refresh 중 여부
          */
-        data class Success(val products: List<Product>) : HomeState
+        data class Success(
+            val products: List<Product>,
+            val isRefreshing: Boolean = false
+        ) : HomeState
 
         /**
          * 에러 상태: 상품 데이터 로드 실패
@@ -55,6 +60,9 @@ object HomeContract {
      *
      * 이벤트 종류:
      * - LoadProducts: 상품 목록 로드 요청
+     * - RefreshProducts: Pull-to-Refresh를 통한 새로고침 요청
+     * - OnProductClick: 상품 클릭 이벤트
+     * - OnErrorDismiss: 에러 상태 해제 요청
      * - RetryLoad: 로드 실패 후 재시도
      */
     sealed interface HomeEvent : UiEvent {
@@ -62,6 +70,21 @@ object HomeContract {
          * 상품 목록을 로드하도록 요청하는 이벤트
          */
         data object LoadProducts : HomeEvent
+
+        /**
+         * Pull-to-Refresh를 통해 상품 목록을 새로고침하는 이벤트
+         */
+        data object RefreshProducts : HomeEvent
+
+        /**
+         * 상품을 클릭했을 때 발생하는 이벤트
+         */
+        data class OnProductClick(val productId: String) : HomeEvent
+
+        /**
+         * 에러 상태를 해제하는 이벤트
+         */
+        data object OnErrorDismiss : HomeEvent
 
         /**
          * 이전 로드 시도 실패 후 다시 로드를 시도하는 이벤트
@@ -77,6 +100,7 @@ object HomeContract {
      * Side Effect 종류:
      * - ShowError: 에러 메시지를 사용자에게 표시
      * - NavigateToProductDetail: 상품 상세 화면으로 네비게이션
+     * - ShowToast: 토스트 메시지 표시
      */
     sealed interface HomeSideEffect : UiSideEffect {
         /**
@@ -92,5 +116,12 @@ object HomeContract {
          * @property productId 네비게이션할 상품의 ID
          */
         data class NavigateToProductDetail(val productId: String) : HomeSideEffect
+
+        /**
+         * 토스트 메시지를 사용자에게 표시하는 side effect
+         *
+         * @property message 표시할 메시지
+         */
+        data class ShowToast(val message: String) : HomeSideEffect
     }
 }

@@ -8,18 +8,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullRefreshIndicator
+import androidx.compose.material3.pulltorefresh.pullRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.bup.ys.daitso.core.model.Product
 import com.bup.ys.daitso.feature.home.contract.HomeContract
 import com.bup.ys.daitso.feature.home.viewmodel.HomeViewModel
@@ -32,22 +41,48 @@ import com.bup.ys.daitso.feature.home.viewmodel.HomeViewModel
  * MVI 아키텍처를 따르며, 다음 상태들을 렌더링합니다:
  * - Initial: 초기 상태 (빈 화면)
  * - Loading: 로딩 인디케이터
- * - Success: 상품 그리드
- * - Error: 에러 메시지
+ * - Success: 상품 그리드 with Pull-to-Refresh
+ * - Error: 에러 메시지 with Retry 버튼
  *
  * @param viewModel HomeViewModel 인스턴스
  * @param onProductClick 상품 클릭 콜백
+ * @param onNavigateToDetail 상품 상세 화면 네비게이션 콜백
  */
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel,
-    onProductClick: (String) -> Unit = {}
+    viewModel: HomeViewModel = hiltViewModel(),
+    onProductClick: (String) -> Unit = {},
+    onNavigateToDetail: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val sideEffect by viewModel.sideEffect.collectAsState(null)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // SideEffect 처리
+    LaunchedEffect(sideEffect) {
+        when (sideEffect) {
+            is HomeContract.HomeSideEffect.NavigateToProductDetail -> {
+                val productId = (sideEffect as HomeContract.HomeSideEffect.NavigateToProductDetail).productId
+                onNavigateToDetail(productId)
+            }
+            is HomeContract.HomeSideEffect.ShowToast -> {
+                val message = (sideEffect as HomeContract.HomeSideEffect.ShowToast).message
+                snackbarHostState.showSnackbar(message)
+            }
+            is HomeContract.HomeSideEffect.ShowError -> {
+                val message = (sideEffect as HomeContract.HomeSideEffect.ShowError).message
+                snackbarHostState.showSnackbar(message)
+            }
+            null -> {}
+        }
+    }
 
     Scaffold(
         topBar = {
             HomeTopBar()
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { paddingValues ->
         Box(
@@ -66,12 +101,23 @@ fun HomeScreen(
                     val state = uiState as HomeContract.HomeState.Success
                     SuccessView(
                         products = state.products,
-                        onProductClick = onProductClick
+                        isRefreshing = state.isRefreshing,
+                        onProductClick = {
+                            viewModel.submitEvent(HomeContract.HomeEvent.OnProductClick(it))
+                        },
+                        onRefresh = {
+                            viewModel.submitEvent(HomeContract.HomeEvent.RefreshProducts)
+                        }
                     )
                 }
                 is HomeContract.HomeState.Error -> {
                     val state = uiState as HomeContract.HomeState.Error
-                    ErrorView(message = state.message)
+                    ErrorView(
+                        message = state.message,
+                        onRetry = {
+                            viewModel.submitEvent(HomeContract.HomeEvent.RetryLoad)
+                        }
+                    )
                 }
             }
         }
@@ -121,42 +167,62 @@ fun LoadingView() {
 }
 
 /**
- * 성공 상태 뷰: 상품 그리드
+ * 성공 상태 뷰: 상품 그리드 with Pull-to-Refresh
  *
  * @param products 표시할 상품 리스트
+ * @param isRefreshing Pull-to-Refresh 중 여부
  * @param onProductClick 상품 클릭 콜백
+ * @param onRefresh 새로고침 콜백
  */
 @Composable
 fun SuccessView(
     products: List<Product>,
-    onProductClick: (String) -> Unit
+    isRefreshing: Boolean = false,
+    onProductClick: (String) -> Unit = {},
+    onRefresh: () -> Unit = {}
 ) {
-    if (products.isEmpty()) {
-        EmptyView()
-    } else {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
-        ) {
-            items(products) { product ->
-                ProductCard(
-                    product = product,
-                    onClick = { onProductClick(product.id) }
-                )
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, onRefresh)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (products.isEmpty()) {
+            EmptyView()
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+                items(products) { product ->
+                    ProductCard(
+                        product = product,
+                        onClick = { onProductClick(product.id) }
+                    )
+                }
             }
         }
+
+        // Pull-to-Refresh indicator
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
 /**
- * 에러 상태 뷰
+ * 에러 상태 뷰 with Retry 버튼
  *
  * @param message 표시할 에러 메시지
+ * @param onRetry 재시도 콜백
  */
 @Composable
-fun ErrorView(message: String) {
+fun ErrorView(message: String, onRetry: () -> Unit = {}) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -177,6 +243,12 @@ fun ErrorView(message: String) {
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text("재시도")
+            }
         }
     }
 }

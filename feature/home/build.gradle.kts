@@ -13,6 +13,8 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:ui"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:data"))
+    implementation(project(":core:common"))
 
     // Core
     implementation(libs.androidx.core.ktx)
@@ -30,6 +32,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Hilt Dependency Injection
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Image loading
     implementation(libs.coil.compose)
