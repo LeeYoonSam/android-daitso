@@ -108,4 +108,64 @@ class ProductTest {
         assertEquals("https://example.com/premium.jpg", product.imageUrl)
         assertEquals("Luxury", product.category)
     }
+
+    @Test
+    fun testProductWithStock() {
+        // Arrange & Act
+        val product = Product(
+            id = "product-456",
+            name = "In Stock Product",
+            description = "Product with stock",
+            price = 49.99,
+            imageUrl = "https://example.com/stock.jpg",
+            category = "General",
+            stock = 100
+        )
+
+        // Assert
+        assertEquals("product-456", product.id)
+        assertEquals("In Stock Product", product.name)
+        assertEquals(49.99, product.price)
+        assertEquals(100, product.stock)
+    }
+
+    @Test
+    fun testProductStockZero() {
+        // Arrange & Act
+        val product = Product(
+            id = "product-789",
+            name = "Out of Stock Product",
+            description = "Product out of stock",
+            price = 29.99,
+            imageUrl = "https://example.com/oos.jpg",
+            category = "General",
+            stock = 0
+        )
+
+        // Assert
+        assertEquals(0, product.stock)
+    }
+
+    @Test
+    fun testProductWithStockDeserialization() {
+        // Arrange
+        val jsonString = """
+            {
+                "id": "product-999",
+                "name": "Stocked Item",
+                "description": "Item with stock field",
+                "price": 59.99,
+                "imageUrl": "https://example.com/item.jpg",
+                "category": "Electronics",
+                "stock": 250
+            }
+        """.trimIndent()
+
+        // Act
+        val product = Json.decodeFromString<Product>(jsonString)
+
+        // Assert
+        assertEquals("product-999", product.id)
+        assertEquals(250, product.stock)
+    }
 }

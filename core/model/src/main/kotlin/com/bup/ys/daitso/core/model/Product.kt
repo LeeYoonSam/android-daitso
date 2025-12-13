@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
  * @param price Product price
  * @param imageUrl URL of the product image
  * @param category Product category
+ * @param stock Available stock quantity (default: 0)
  */
 @Serializable
 data class Product(
@@ -19,5 +20,6 @@ data class Product(
     val description: String,
     val price: Double,
     val imageUrl: String,
-    val category: String
+    val category: String,
+    val stock: Int = 0
 )
