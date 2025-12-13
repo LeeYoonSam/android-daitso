@@ -11,6 +11,7 @@ import io.mockk.impl.annotations.MockK
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -212,6 +213,7 @@ class ProductDetailViewModelTest {
         price: Double = 19.99,
         description: String = "Product Description",
         imageUrl: String = "https://example.com/image.jpg",
+        category: String = "Electronics",
         stock: Int = 100
     ): Product {
         return Product(
@@ -220,6 +222,7 @@ class ProductDetailViewModelTest {
             price = price,
             description = description,
             imageUrl = imageUrl,
+            category = category,
             stock = stock
         )
     }

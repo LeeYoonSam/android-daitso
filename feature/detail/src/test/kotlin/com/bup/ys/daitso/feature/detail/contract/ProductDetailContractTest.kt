@@ -26,6 +26,30 @@ class ProductDetailContractTest {
     }
 
     @Test
+    fun testProductDetailUiStateWithProduct() {
+        // Arrange & Act
+        val state = ProductDetailUiState(
+            product = com.bup.ys.daitso.core.model.Product(
+                id = "product-123",
+                name = "Test Product",
+                description = "Test Description",
+                price = 99.99,
+                imageUrl = "https://example.com/image.jpg",
+                category = "Electronics",
+                stock = 50
+            ),
+            selectedQuantity = 5
+        )
+
+        // Assert
+        assert(state.product != null)
+        assert(state.product!!.stock == 50)
+        assert(state.selectedQuantity == 5)
+        assert(state.isLoading == false)
+        assert(state.error == null)
+    }
+
+    @Test
     fun testProductDetailUiStateImplementsUiState() {
         // Arrange
         val state = ProductDetailUiState()
