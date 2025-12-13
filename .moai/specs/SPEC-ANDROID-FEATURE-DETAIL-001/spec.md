@@ -5,13 +5,13 @@
 ```yaml
 spec_id: SPEC-ANDROID-FEATURE-DETAIL-001
 version: 1.0.0
-status: pending
+status: completed
 priority: high
 domain: ANDROID-FEATURE
 created_at: 2025-11-29
 updated_at: 2025-11-29
 owner: Team
-completed_at: null
+completed_at: 2025-12-13
 dependencies: [SPEC-ANDROID-INIT-001, SPEC-ANDROID-MVI-002, SPEC-ANDROID-FEATURE-HOME-001]
 related_specs: [SPEC-ANDROID-FEATURE-HOME-001, SPEC-ANDROID-FEATURE-CART-001, SPEC-ANDROID-INTEGRATION-003]
 tags: [android, mvi, feature, detail, compose, state-management, navigation]
