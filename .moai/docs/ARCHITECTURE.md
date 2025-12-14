@@ -1043,14 +1043,43 @@ Feature Modules
 
 ---
 
+## Feature 모듈 구현 현황
+
+### 구현 완료
+
+#### :feature:cart - 장바구니 관리
+- **상태**: Completed (2025-12-14)
+- **SPEC**: SPEC-ANDROID-FEATURE-CART-001
+- **테스트 커버리지**: 95%+
+- **주요 기능**:
+  - Room DB 통합 아이템 관리
+  - MVI 아키텍처 적용
+  - Flow 기반 반응형 UI
+  - 수량 조절 및 가격 계산
+- **문서**:
+  - 전체 API 문서: `docs/MODULES.md`
+  - Cart 상세 가이드: `feature/cart/README.md`
+
+#### :feature:detail - 상품 상세 조회
+- **상태**: Completed (2025-12-13)
+- **SPEC**: SPEC-ANDROID-FEATURE-DETAIL-001
+- **주요 기능**:
+  - 상품 정보 상세 조회
+  - 이미지 갤러리
+  - 리뷰 및 평점
+  - 장바구니 추가
+
+---
+
 ## 마이그레이션 가이드
 
 ### 향후 확장 계획
 
-#### 1단계: Feature 모듈 추가 (근시일)
+#### 1단계: Feature 모듈 추가 (진행 중)
 - `:feature:products` - 상품 목록, 상세 조회
-- `:feature:cart` - 장바구니 관리
 - `:feature:checkout` - 결제 프로세스
+- ✅ `:feature:cart` - 장바구니 관리 (완료)
+- ✅ `:feature:detail` - 상품 상세 (완료)
 
 #### 2단계: 고급 기능 (중기)
 - `:feature:auth` - 인증 및 사용자 관리
@@ -1075,6 +1104,7 @@ Feature Modules
 
 ---
 
-**아키텍처 문서 버전**: 1.0.0
-**최종 검토**: 2025-11-28
+**아키텍처 문서 버전**: 1.0.1
+**최종 검토**: 2025-12-14
 **상태**: Active
+**최신 업데이트**: Cart 모듈 (SPEC-ANDROID-FEATURE-CART-001) 완료 기록

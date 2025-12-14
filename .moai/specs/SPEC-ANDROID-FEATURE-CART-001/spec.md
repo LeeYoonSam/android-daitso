@@ -4,14 +4,14 @@
 
 ```yaml
 spec_id: SPEC-ANDROID-FEATURE-CART-001
-version: 1.0.0
-status: pending
+version: 1.0.1
+status: completed
 priority: high
 domain: ANDROID-FEATURE
 created_at: 2025-11-29
-updated_at: 2025-11-29
+updated_at: 2025-12-14
 owner: Team
-completed_at: null
+completed_at: 2025-12-14
 dependencies: [SPEC-ANDROID-INIT-001, SPEC-ANDROID-MVI-002]
 related_specs: [SPEC-ANDROID-FEATURE-HOME-001, SPEC-ANDROID-FEATURE-DETAIL-001, SPEC-ANDROID-INTEGRATION-003]
 tags: [android, mvi, feature, cart, compose, room-database, state-management]
