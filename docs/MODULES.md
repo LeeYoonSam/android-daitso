@@ -160,15 +160,52 @@ interface DaitsoApiService {
 **책임**: Room Database 설정, DAO, Entity 정의
 
 **주요 구성 요소**:
-- `DaitsoDatabase` - Room Database 클래스
-- `CartDao` - Cart 아이템 접근 객체
-- `CartItemEntity` - Room 엔티티
+- `DaitsoDatabase` - Room Database 클래스 (v2)
+- `ProductEntity` - 상품 정보 엔티티 (신규)
+- `ProductDao` - 상품 데이터 접근 객체 (신규)
+- `CartItemEntity` - 장바구니 아이템 엔티티
+- `CartDao` - 장바구니 데이터 접근 객체
 
 **의존성**:
 - Room
 - Kotlin Coroutines (Flow)
 
-**주요 Entity**:
+**Entity - ProductEntity (신규)**:
+```kotlin
+@Entity(tableName = "products")
+data class ProductEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val description: String,
+    val price: Double,
+    val imageUrl: String,
+    val category: String,
+    val stock: Int
+)
+```
+
+**DAO - ProductDao (신규)**:
+```kotlin
+@Dao
+interface ProductDao {
+    @Query("SELECT * FROM products")
+    fun getProducts(): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products WHERE id = :id")
+    suspend fun getProductById(id: String): ProductEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProduct(product: ProductEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProducts(products: List<ProductEntity>)
+
+    @Query("DELETE FROM products")
+    suspend fun deleteAllProducts()
+}
+```
+
+**Entity - CartItemEntity**:
 ```kotlin
 @Entity(tableName = "cart_items")
 data class CartItemEntity(
@@ -181,7 +218,7 @@ data class CartItemEntity(
 )
 ```
 
-**주요 DAO 메서드**:
+**DAO - CartDao**:
 ```kotlin
 @Dao
 interface CartDao {
@@ -205,15 +242,30 @@ interface CartDao {
 }
 ```
 
+**Database 클래스**:
+```kotlin
+@Database(
+    entities = [ProductEntity::class, CartItemEntity::class],
+    version = 2,
+    exportSchema = true
+)
+abstract class DaitsoDatabase : RoomDatabase() {
+    abstract fun productDao(): ProductDao
+    abstract fun cartDao(): CartDao
+}
+```
+
 ---
 
 ### :core:data
 
-**책임**: Repository 패턴 구현, 데이터 소스 통합
+**책임**: Repository 패턴 구현, Offline-first 데이터 동기화
 
 **주요 구성 요소**:
 - `ProductRepository` 인터페이스
-- `ProductRepositoryImpl` 구현
+- `ProductRepositoryImpl` - Offline-first 구현
+- `LocalDataSource` 인터페이스 (Product 캐싱 추가)
+- `LocalDataSourceImpl` - 로컬 캐시 구현
 - `DataModule` - Hilt 모듈
 
 **의존성**:
@@ -222,13 +274,36 @@ interface CartDao {
 - :core:network
 - :core:database
 
-**Repository 인터페이스 예**:
+**LocalDataSource 인터페이스 (확장)**:
+```kotlin
+interface LocalDataSource {
+    // 기존 Cart 메서드
+    fun getCartItems(): Flow<List<CartItem>>
+    suspend fun insertCartItem(cartItem: CartItem)
+    suspend fun deleteCartItem(cartItem: CartItem)
+    suspend fun clearCart()
+
+    // 신규: Product 캐싱
+    suspend fun getProducts(): List<Product>
+    suspend fun getProduct(productId: String): Product?
+    suspend fun saveProducts(products: List<Product>)
+    suspend fun saveProduct(product: Product)
+}
+```
+
+**Repository 인터페이스**:
 ```kotlin
 interface ProductRepository {
     fun getProducts(): Flow<Result<List<Product>>>
     fun getProduct(id: String): Flow<Result<Product>>
 }
 ```
+
+**Offline-First 데이터 흐름**:
+1. 로컬 캐시에서 즉시 데이터 반환 (Result.Success)
+2. 네트워크에서 최신 데이터 동시에 요청
+3. 캐시 업데이트 후 새로운 데이터 반환 (Result.Success)
+4. 네트워크 실패해도 로컬 데이터 유지 (Result.Error)
 
 ---
 
