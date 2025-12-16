@@ -2,6 +2,7 @@ package com.bup.ys.daitso.core.database
 
 import android.content.Context
 import com.bup.ys.daitso.core.database.dao.CartDao
+import com.bup.ys.daitso.core.database.dao.ProductDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -42,5 +43,17 @@ object DatabaseModule {
     @Provides
     fun provideCartDao(database: DaitsoDatabase): CartDao {
         return database.cartDao()
+    }
+
+    /**
+     * Provides ProductDao for database operations.
+     *
+     * @param database The DaitsoDatabase instance
+     * @return ProductDao instance
+     */
+    @Singleton
+    @Provides
+    fun provideProductDao(database: DaitsoDatabase): ProductDao {
+        return database.productDao()
     }
 }
