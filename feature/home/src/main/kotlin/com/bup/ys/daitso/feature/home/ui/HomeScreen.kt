@@ -17,14 +17,14 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullRefreshIndicator
-import androidx.compose.material3.pulltorefresh.pullRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.bup.ys.daitso.core.model.Product
 import com.bup.ys.daitso.feature.home.contract.HomeContract
 import com.bup.ys.daitso.feature.home.viewmodel.HomeViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -57,6 +58,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val sideEffect by viewModel.sideEffect.collectAsState(null)
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     // SideEffect 처리
     LaunchedEffect(sideEffect) {
@@ -102,11 +104,15 @@ fun HomeScreen(
                     SuccessView(
                         products = state.products,
                         isRefreshing = state.isRefreshing,
-                        onProductClick = {
-                            viewModel.submitEvent(HomeContract.HomeEvent.OnProductClick(it))
+                        onProductClick = { productId ->
+                            coroutineScope.launch {
+                                viewModel.submitEvent(HomeContract.HomeEvent.OnProductClick(productId))
+                            }
                         },
                         onRefresh = {
-                            viewModel.submitEvent(HomeContract.HomeEvent.RefreshProducts)
+                            coroutineScope.launch {
+                                viewModel.submitEvent(HomeContract.HomeEvent.RefreshProducts)
+                            }
                         }
                     )
                 }
@@ -115,7 +121,9 @@ fun HomeScreen(
                     ErrorView(
                         message = state.message,
                         onRetry = {
-                            viewModel.submitEvent(HomeContract.HomeEvent.RetryLoad)
+                            coroutineScope.launch {
+                                viewModel.submitEvent(HomeContract.HomeEvent.RetryLoad)
+                            }
                         }
                     )
                 }
@@ -174,6 +182,7 @@ fun LoadingView() {
  * @param onProductClick 상품 클릭 콜백
  * @param onRefresh 새로고침 콜백
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SuccessView(
     products: List<Product>,
@@ -181,12 +190,13 @@ fun SuccessView(
     onProductClick: (String) -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
-    val pullRefreshState = rememberPullRefreshState(isRefreshing, onRefresh)
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pullRefresh(pullRefreshState)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        state = pullToRefreshState,
+        modifier = Modifier.fillMaxSize()
     ) {
         if (products.isEmpty()) {
             EmptyView()
@@ -205,13 +215,6 @@ fun SuccessView(
                 }
             }
         }
-
-        // Pull-to-Refresh indicator
-        PullRefreshIndicator(
-            refreshing = isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
     }
 }
 
