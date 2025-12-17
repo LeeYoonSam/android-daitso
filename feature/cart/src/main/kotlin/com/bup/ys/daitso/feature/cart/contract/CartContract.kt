@@ -1,5 +1,6 @@
 package com.bup.ys.daitso.feature.cart.contract
 
+import com.bup.ys.daitso.core.model.CartItem as CoreCartItem
 import com.bup.ys.daitso.core.ui.contract.UiEvent
 import com.bup.ys.daitso.core.ui.contract.UiSideEffect
 import com.bup.ys.daitso.core.ui.contract.UiState
@@ -20,7 +21,8 @@ data class CartUiState(
 ) : UiState
 
 /**
- * Represents a single item in the shopping cart.
+ * UI representation of a cart item.
+ * Adapter for core::CartItem with UI-specific field names.
  *
  * @param productId Unique identifier for the product
  * @param name Name of the product
@@ -35,6 +37,32 @@ data class CartItem(
     val quantity: Int,
     val imageUrl: String
 )
+
+/**
+ * Convert core CartItem to UI CartItem
+ */
+fun CoreCartItem.toUICartItem(): CartItem {
+    return CartItem(
+        productId = this.productId,
+        name = this.productName,
+        price = this.price,
+        quantity = this.quantity,
+        imageUrl = this.imageUrl
+    )
+}
+
+/**
+ * Convert UI CartItem to core CartItem
+ */
+fun CartItem.toCoreCartItem(): CoreCartItem {
+    return CoreCartItem(
+        productId = this.productId,
+        productName = this.name,
+        quantity = this.quantity,
+        price = this.price,
+        imageUrl = this.imageUrl
+    )
+}
 
 /**
  * User intents (events) in the shopping cart feature.
@@ -69,6 +97,12 @@ sealed interface CartIntent : UiEvent {
      */
     object DismissError : CartIntent
 }
+
+/**
+ * Alias for CartIntent.
+ * Renamed from Intent to Event for better MVI naming convention.
+ */
+typealias CartEvent = CartIntent
 
 /**
  * Side effects for one-time events like navigation and snackbars.

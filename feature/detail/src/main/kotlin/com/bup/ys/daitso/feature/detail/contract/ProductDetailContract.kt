@@ -56,6 +56,12 @@ sealed interface ProductDetailIntent : UiEvent {
 }
 
 /**
+ * Alias for ProductDetailIntent.
+ * Renamed from Intent to Event for better MVI naming convention.
+ */
+typealias ProductDetailEvent = ProductDetailIntent
+
+/**
  * Side effects for one-time events like navigation and snackbars.
  * These are not part of the persistent state.
  */
