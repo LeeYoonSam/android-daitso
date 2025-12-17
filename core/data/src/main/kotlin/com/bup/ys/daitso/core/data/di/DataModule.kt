@@ -4,6 +4,8 @@ import com.bup.ys.daitso.core.common.Dispatcher
 import com.bup.ys.daitso.core.common.DaitsoDispatchers
 import com.bup.ys.daitso.core.data.datasource.LocalDataSource
 import com.bup.ys.daitso.core.data.datasource.LocalDataSourceImpl
+import com.bup.ys.daitso.core.data.repository.CartRepository
+import com.bup.ys.daitso.core.data.repository.CartRepositoryImpl
 import com.bup.ys.daitso.core.data.repository.ProductRepository
 import com.bup.ys.daitso.core.data.repository.ProductRepositoryImpl
 import com.bup.ys.daitso.core.network.NetworkDataSource
@@ -31,6 +33,12 @@ abstract class DataModule {
     abstract fun bindLocalDataSource(
         impl: LocalDataSourceImpl
     ): LocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindCartRepository(
+        impl: CartRepositoryImpl
+    ): CartRepository
 
     companion object {
 
