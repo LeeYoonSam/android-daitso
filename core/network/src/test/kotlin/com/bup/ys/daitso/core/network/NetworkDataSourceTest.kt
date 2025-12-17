@@ -50,8 +50,8 @@ class NetworkDataSourceTest {
     fun testFetchProducts_Success() {
         // Arrange
         val products = listOf(
-            Product("1", "Product 1", "Desc 1", 10.0, "url1"),
-            Product("2", "Product 2", "Desc 2", 20.0, "url2")
+            Product("1", "Product 1", "Desc 1", 10.0, "url1", "category1"),
+            Product("2", "Product 2", "Desc 2", 20.0, "url2", "category2")
         )
         val responseBody = Json.encodeToString(products)
 

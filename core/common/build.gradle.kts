@@ -8,4 +8,9 @@ dependencies {
 
     // javax.inject for @Qualifier annotation (pure JVM, no Android dependencies)
     implementation(libs.javax.inject)
+
+    // Testing
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

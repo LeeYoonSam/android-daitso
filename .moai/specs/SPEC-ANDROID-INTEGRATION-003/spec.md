@@ -5,13 +5,13 @@
 ```yaml
 spec_id: SPEC-ANDROID-INTEGRATION-003
 version: 1.0.0
-status: pending
+status: completed
 priority: critical
 domain: ANDROID-INTEGRATION
 created_at: 2025-11-29
-updated_at: 2025-11-29
+updated_at: 2025-12-17
 owner: Team
-completed_at: null
+completed_at: 2025-12-17
 dependencies: [SPEC-ANDROID-INIT-001, SPEC-ANDROID-MVI-002, SPEC-ANDROID-FEATURE-HOME-001, SPEC-ANDROID-FEATURE-DETAIL-001, SPEC-ANDROID-FEATURE-CART-001]
 related_specs: []
 tags: [android, integration, navigation, hilt, compose, app-module]

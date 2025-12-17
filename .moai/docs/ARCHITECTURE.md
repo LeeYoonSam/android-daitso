@@ -575,6 +575,287 @@ abstract class DaitsoDatabase : RoomDatabase() {
 
 ---
 
+## App Integration Layer (SPEC-ANDROID-INTEGRATION-003)
+
+### 개요
+
+**App Integration Layer**는 모든 Feature 모듈들을 하나의 응집력 있는 애플리케이션으로 통합하는 계층입니다.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│            App Module (:app)                             │
+│  ┌─────────────────────────────────────────────────────┐│
+│  │  App Integration Layer (Navigation + DI)            ││
+│  │  ├─ DaitsoApplication (@HiltAndroidApp)             ││
+│  │  ├─ MainActivity (Entry Point)                      ││
+│  │  ├─ DaitsoNavHost (Navigation Graph)                ││
+│  │  └─ NavRoutes (Route Constants)                     ││
+│  └─────────────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────┘
+         ▲                                      ▲
+         │ Feature 모듈들                       │ Core 모듈들
+         │                                      │
+    ┌────┴────┬────────┬──────────┐       ┌────┴─────────┐
+    │          │        │          │       │              │
+    ▼          ▼        ▼          ▼       ▼              ▼
+ Home      Detail     Cart     (Future)  Common    Data/Network
+ Module    Module     Module    Modules  Module      Modules
+```
+
+### 핵심 컴포넌트
+
+#### 1. MainActivity - 애플리케이션 진입점
+
+**파일**: `app/src/main/kotlin/.../MainActivity.kt`
+
+```kotlin
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            DaitsoTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    DaitsoNavHost()
+                }
+            }
+        }
+    }
+}
+```
+
+**역할**:
+- ✅ Compose 런타임 초기화
+- ✅ 테마 적용 (DaitsoTheme)
+- ✅ 네비게이션 그래프 호스팅 (DaitsoNavHost)
+- ✅ Hilt 의존성 주입 (@AndroidEntryPoint)
+
+#### 2. DaitsoApplication - Hilt 구성
+
+**파일**: `app/src/main/kotlin/.../DaitsoApplication.kt`
+
+```kotlin
+@HiltAndroidApp
+class DaitsoApplication : Application() {
+    // Hilt 자동 초기화
+}
+```
+
+**역할**:
+- ✅ Hilt 의존성 주입 컨테이너 초기화
+- ✅ @Module 클래스 등록
+- ✅ Singleton 인스턴스 생성 및 관리
+
+#### 3. DaitsoNavHost - 네비게이션 그래프
+
+**파일**: `app/src/main/kotlin/.../navigation/NavigationHost.kt`
+
+```kotlin
+@Composable
+fun DaitsoNavHost(
+    navController: NavHostController = rememberNavController()
+) {
+    NavHost(
+        navController = navController,
+        startDestination = NavRoutes.HOME
+    ) {
+        // Home 라우트
+        composable(route = NavRoutes.HOME) { ... }
+
+        // ProductDetail 라우트
+        composable(
+            route = NavRoutes.PRODUCT_DETAIL,
+            arguments = listOf(
+                navArgument("productId") { type = NavType.StringType }
+            )
+        ) { ... }
+
+        // Cart 라우트
+        composable(route = NavRoutes.CART) { ... }
+    }
+}
+```
+
+**역할**:
+- ✅ 세 가지 주요 라우트 정의 (HOME, PRODUCT_DETAIL, CART)
+- ✅ 라우트 매개변수 관리 (productId)
+- ✅ ViewModel 주입 (@hiltViewModel())
+- ✅ 화면 간 네비게이션 제어
+
+#### 4. NavRoutes - 라우트 상수
+
+**파일**: `app/src/main/kotlin/.../navigation/NavigationHost.kt`
+
+```kotlin
+object NavRoutes {
+    const val HOME = "home"
+    const val PRODUCT_DETAIL = "product_detail/{productId}"
+    const val CART = "cart"
+
+    fun productDetail(productId: String) = "product_detail/$productId"
+}
+```
+
+**역할**:
+- ✅ 타입 안전한 라우트 상수 제공
+- ✅ 라우트 빌더 함수 (productDetail)
+- ✅ 하드코딩 문자열 제거
+
+### 네비게이션 흐름
+
+```
+HOME Screen
+   │
+   ├─ 사용자가 상품 클릭
+   │
+   ▼
+navController.navigate(NavRoutes.productDetail(productId))
+   │
+   ├─ 라우트: "product_detail/P123"
+   ├─ 백스택: [HOME, PRODUCT_DETAIL/P123]
+   │
+   ▼
+PRODUCT_DETAIL Screen
+   │
+   ├─ LaunchedEffect(productId)
+   ├─ viewModel.submitEvent(LoadProduct(productId))
+   │
+   ▼
+상품 데이터 표시
+   │
+   ├─ 사용자가 "장바구니 보기" 클릭
+   │
+   ▼
+navController.navigate(NavRoutes.CART)
+   │
+   ├─ 백스택: [HOME, PRODUCT_DETAIL/P123, CART]
+   │
+   ▼
+CART Screen
+   │
+   ├─ 사용자가 뒤로 가기
+   │
+   ▼
+navController.popBackStack()
+   │
+   ├─ 백스택: [HOME, PRODUCT_DETAIL/P123]
+   │
+   ▼
+PRODUCT_DETAIL Screen (상태 복원)
+```
+
+### 이벤트 처리 패턴
+
+각 화면에서의 이벤트 처리는 MVI 패턴을 따릅니다:
+
+```
+사용자 상호작용 (Click)
+    │
+    ▼
+Composable 콜백
+    │
+    ├─ coroutineScope.launch {
+    │    viewModel.submitEvent(intent)
+    │  }
+    │
+    ▼
+ViewModel.submitEvent()
+    │
+    ├─ 이벤트 처리
+    ├─ 상태 업데이트
+    ├─ Side Effect 방출
+    │
+    ▼
+StateFlow 방출
+    │
+    ├─ collectAsState()로 구독
+    │
+    ▼
+UI 재구성 및 업데이트
+```
+
+### 의존성 주입 구성
+
+**파일**: `app/build.gradle.kts`
+
+```kotlin
+dependencies {
+    // Compose
+    implementation(libs.androidx.compose.bom)
+    implementation(libs.androidx.material3)
+
+    // Navigation
+    implementation(libs.androidx.compose.navigation)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+
+    // Feature 모듈들
+    implementation(project(":feature:home"))
+    implementation(project(":feature:detail"))
+    implementation(project(":feature:cart"))
+
+    // Core 모듈들
+    implementation(project(":core:model"))
+    implementation(project(":core:common"))
+}
+```
+
+### AndroidManifest.xml 구성
+
+```xml
+<application
+    android:name=".DaitsoApplication"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name">
+
+    <activity
+        android:name=".MainActivity"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+
+</application>
+```
+
+### 핵심 특징
+
+1. **선언적 네비게이션** - 라우트를 상수로 정의
+2. **타입 안전성** - NavRoutes 상수로 오류 방지
+3. **의존성 주입** - Hilt로 자동 주입 관리
+4. **MVI 패턴** - 통합된 이벤트 처리
+5. **컴포지션** - Jetpack Compose로 UI 구성
+
+### 확장성
+
+새로운 화면을 추가하려면:
+
+```kotlin
+// 1. NavRoutes에 상수 추가
+object NavRoutes {
+    const val NEW_SCREEN = "new_screen/{param}"
+    fun newScreen(param: String) = "new_screen/$param"
+}
+
+// 2. DaitsoNavHost에 라우트 추가
+composable(
+    route = NavRoutes.NEW_SCREEN,
+    arguments = listOf(navArgument("param") { type = NavType.StringType })
+) { ... }
+
+// 3. 네비게이션 호출
+navController.navigate(NavRoutes.newScreen(paramValue))
+```
+
+---
+
 ## 확장 포인트
 
 ### 1. Feature 모듈 추가

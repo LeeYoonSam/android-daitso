@@ -5,42 +5,42 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Unit tests for Dispatcher annotation.
+ * Unit tests for Dispatcher annotation and DaitsoDispatchers enum.
  *
  * Tests cover:
- * - Dispatcher enum values
- * - Dispatcher type safety
+ * - DaitsoDispatchers enum values
+ * - Dispatcher annotation type safety
  */
 class DispatcherTest {
 
     @Test
     fun testDispatcherValues() {
         // Assert all dispatcher values are defined
-        assertTrue(Dispatcher.values().isNotEmpty())
+        assertTrue(DaitsoDispatchers.entries.isNotEmpty())
     }
 
     @Test
     fun testMainDispatcher() {
         // Assert
-        assertEquals("Main", Dispatcher.Main.name)
+        assertEquals("Main", DaitsoDispatchers.Main.name)
     }
 
     @Test
     fun testIODispatcher() {
         // Assert
-        assertEquals("IO", Dispatcher.IO.name)
+        assertEquals("IO", DaitsoDispatchers.IO.name)
     }
 
     @Test
     fun testDefaultDispatcher() {
         // Assert
-        assertEquals("Default", Dispatcher.Default.name)
+        assertEquals("Default", DaitsoDispatchers.Default.name)
     }
 
     @Test
     fun testDispatcherAnnotationPresence() {
         // Arrange
-        @DispatcherType(Dispatcher.Main)
+        @Dispatcher(DaitsoDispatchers.Main)
         fun testFunction() {}
 
         // This test verifies the annotation is syntactically valid

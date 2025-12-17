@@ -20,6 +20,7 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test)
     testImplementation(libs.mockk)
     testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.test.junit)

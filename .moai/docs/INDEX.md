@@ -183,14 +183,68 @@
   - CartRepository 인터페이스
   - 네비게이션 경로 및 딥링크 정의
 
-#### 3. 아키텍처 문서 업데이트
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** (Phase 4 섹션 추가)
-  - Phase 4 MVI UI 아키텍처
-  - UI 상태 관리 흐름 다이어그램
-  - BaseViewModel 패턴
-  - Feature ViewModel 구현 예시
-  - Compose 통합 예시
-  - 의존성 흐름 및 모듈 구조
+#### 3. App Integration 문서 (SPEC-ANDROID-INTEGRATION-003)
+
+##### 새로운 6개 통합 문서
+
+- **[APP_INTEGRATION_GUIDE.md](APP_INTEGRATION_GUIDE.md)** (v1.0.0, 신규)
+  - App 통합 계층 개요 및 아키텍처
+  - MainActivity, DaitsoApplication, DaitsoNavHost, NavRoutes
+  - 애플리케이션 진입점 및 Hilt 구성
+  - 사용자 네비게이션 여정
+  - 의존성 구성 및 설정
+  - 베스트 프랙티스 및 문제 해결
+
+- **[NAVIGATION_ARCHITECTURE.md](NAVIGATION_ARCHITECTURE.md)** (v1.0.0, 신규)
+  - 네비게이션 시스템 설계 및 라우트 아키텍처
+  - 세 가지 라우트 (HOME, PRODUCT_DETAIL, CART) 정의
+  - 백스택 관리 및 상태 복원
+  - 화면 전환 다이어그램
+  - 딥링킹 (Future)
+  - 성능 최적화 및 테스트
+
+- **[APP_API_REFERENCE.md](APP_API_REFERENCE.md)** (v1.0.0, 신규)
+  - MainActivity API 문서
+  - DaitsoApplication 구성
+  - DaitsoNavHost 네비게이션 그래프 정의
+  - NavRoutes 상수 및 함수
+  - 네비게이션 콜백 명세
+  - 타입 정의 및 사용 패턴
+
+- **[EVENT_HANDLING_GUIDE.md](EVENT_HANDLING_GUIDE.md)** (v1.0.0, 신규)
+  - MVI 패턴 기초 (Model-View-Intent)
+  - 이벤트 흐름 파이프라인 및 타임라인
+  - 각 화면의 이벤트 핸들러 구현
+  - ViewModel 이벤트 처리 및 reducer 패턴
+  - 네비게이션 이벤트 처리
+  - Side Effects 및 에러 처리
+  - 베스트 프랙티스
+
+- **[NAVIGATION_FLOW_DIAGRAMS.md](NAVIGATION_FLOW_DIAGRAMS.md)** (v1.0.0, 신규)
+  - 완전한 네비게이션 그래프 시각화
+  - 사용자 여정 흐름 (장바구니 추가, 뒤로 가기 등)
+  - 백스택 진화 및 상태 추적
+  - ViewModel 상태 머신 다이어그램 (Home, ProductDetail, Cart)
+  - 이벤트 흐름 시퀀스 다이어그램
+  - 에러 복구 흐름
+
+- **[INTEGRATION_TESTING.md](INTEGRATION_TESTING.md)** (v1.0.0, 신규)
+  - 통합 테스트 개요 및 테스트 범위
+  - 네비게이션 테스트 (라우트 전환, 백스택 관리)
+  - 상태 관리 테스트 (ViewModel 상태 업데이트)
+  - 이벤트 흐름 테스트 (완전한 사용자 여정)
+  - 실제 통합 테스트 예제
+  - Mock 설정 (Fake Repository, Test NavController)
+  - 테스트 베스트 프랙티스
+
+#### 4. 아키텍처 문서 업데이트
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** (App Integration Layer 섹션 추가)
+  - Phase 3-4 MVI UI 아키텍처
+  - App Integration Layer 개요
+  - MainActivity, DaitsoApplication, DaitsoNavHost, NavRoutes
+  - 네비게이션 흐름 및 이벤트 처리 패턴
+  - 의존성 주입 구성
+  - 확장성 패턴
 
 ### SPEC 문서
 
