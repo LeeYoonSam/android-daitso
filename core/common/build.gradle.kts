@@ -6,6 +6,6 @@ dependencies {
     // Coroutines for async/threading utilities
     implementation(libs.kotlinx.coroutines.core)
 
-    // Hilt for dependency injection (Qualifier)
-    implementation(libs.hilt.android)
+    // javax.inject for @Qualifier annotation (pure JVM, no Android dependencies)
+    implementation(libs.javax.inject)
 }

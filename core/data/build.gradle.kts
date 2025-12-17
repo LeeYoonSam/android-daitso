@@ -7,7 +7,11 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:common"))
     implementation(project(":core:network"))
-    implementation(project(":core:database"))
+    api(project(":core:database"))
+
+    // Room (needed for RoomDatabase type access)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
