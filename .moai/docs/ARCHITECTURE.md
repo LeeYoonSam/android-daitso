@@ -1,8 +1,8 @@
 # Daitso 아키텍처 가이드
 
-**SPEC**: SPEC-ANDROID-INIT-001
-**최종 업데이트**: 2025-11-28
-**작성자**: GOOS
+**SPEC**: SPEC-ANDROID-REFACTOR-001
+**최종 업데이트**: 2025-12-17
+**작성자**: GOOS (Updated by doc-syncer)
 
 ---
 
@@ -268,6 +268,154 @@ class ProductRepositoryImpl @Inject constructor(
     }.flowOn(ioDispatcher)
 }
 ```
+
+### CartRepository 통합 (SPEC-ANDROID-REFACTOR-001)
+
+**변경**: feature:cart와 feature:detail에 분산되어 있던 CartRepository를 core:data에 통합
+
+#### Before: 분산된 구조
+
+```
+feature:cart
+├─► domain/CartRepository.kt (인터페이스)
+└─► repository/CartRepositoryImpl.kt (구현)
+
+feature:detail
+├─► repository/CartRepository.kt (인터페이스)
+└─► repository/CartRepositoryImpl.kt (구현)
+```
+
+**문제점**:
+- 중복된 CartRepository 정의
+- 구현 불일치
+- 순환 의존성 위험
+
+#### After: 통합된 구조
+
+```
+core:data
+├─► repository/CartRepository.kt (통합 인터페이스)
+├─► repository/CartRepositoryImpl.kt (통합 구현)
+└─► di/DataModule.kt (Hilt 바인딩)
+
+feature:cart → core:data (주입받음)
+feature:detail → core:data (주입받음)
+```
+
+#### 통합 CartRepository 인터페이스
+
+```kotlin
+/**
+ * Unified repository interface for all cart operations.
+ * Combines operations from both feature:cart and feature:detail
+ */
+interface CartRepository {
+    fun getCartItems(): Flow<List<CartItem>>
+    suspend fun updateQuantity(productId: String, quantity: Int)
+    suspend fun removeItem(productId: String)
+    suspend fun clearCart()
+    suspend fun addToCart(product: Product, quantity: Int): Boolean
+    suspend fun getProductDetails(productId: String): Product
+}
+```
+
+#### 데이터 흐름: 장바구니 추가
+
+```
+ProductDetailViewModel
+    │
+    └─► cartRepository.addToCart(product, quantity)
+        │
+        └─► CartRepositoryImpl
+            │
+            ├─► 수량 검증 (1-999)
+            │
+            ├─► CartItem 생성
+            │
+            └─► cartDao.insertCartItem(item)
+                │
+                └─► Room Database (INSERT)
+                    │
+                    └─► CartItemEntity 저장
+
+CartViewModel
+    │
+    └─► cartRepository.getCartItems()
+        │
+        └─► CartRepositoryImpl
+            │
+            └─► cartDao.getCartItems().map { ... }
+                │
+                └─► Room Database (SELECT)
+                    │
+                    └─► Flow<List<CartItem>>
+```
+
+#### Hilt DI 바인딩
+
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class DataModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindProductRepository(
+        impl: ProductRepositoryImpl
+    ): ProductRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCartRepository(
+        impl: CartRepositoryImpl
+    ): CartRepository
+}
+```
+
+#### 의존성 다이어그램: Before → After
+
+**Before (분산)**
+```
+feature:cart            feature:detail
+  │                         │
+  ├─► CartRepository        ├─► CartRepository
+  └─► CartRepositoryImpl     └─► CartRepositoryImpl
+```
+
+**After (통합)**
+```
+feature:cart      feature:detail
+   │                  │
+   └──────┬───────────┘
+          │
+          ▼
+     core:data
+       │
+       ├─► CartRepository (통합)
+       └─► CartRepositoryImpl (통합)
+            │
+            ▼
+        core:database
+```
+
+#### 마이그레이션 영향
+
+| 모듈 | Before | After | 변경 유형 |
+|------|--------|-------|----------|
+| feature:cart | 로컬 CartRepository 구현 | core:data 주입 | 의존성 변경 |
+| feature:detail | 로컬 CartRepository 구현 | core:data 주입 | 의존성 변경 |
+| core:data | CartRepository 없음 | CartRepository 추가 | 신규 구현 |
+
+#### 테스트 구조
+
+```
+core/data/src/test/
+└─► repository/
+    ├─► CartRepositoryTest.kt (인터페이스 검증)
+    └─► CartRepositoryImplTest.kt (구현 검증)
+```
+
+**테스트 커버리지**: 90% 이상 유지
 
 ---
 

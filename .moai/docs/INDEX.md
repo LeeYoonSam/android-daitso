@@ -1,9 +1,9 @@
 # Daitso 문서 인덱스
 
-**최종 업데이트**: 2025-12-13
+**최종 업데이트**: 2025-12-17
 **프로젝트**: Android MVI Modular
-**SPEC**: SPEC-ANDROID-INIT-001
-**Phase 상태**: Phase 1-4 진행 중 (Detail Feature 문서화 완료)
+**SPEC**: SPEC-ANDROID-REFACTOR-001
+**Phase 상태**: CartRepository 통합 및 Event 용어 표준화 완료
 
 ---
 
@@ -141,13 +141,14 @@
   - 장바구니 상태 관리 및 총 가격 계산
   - 테스트 전략 (Unit Test, UI Test)
 
-- **[CART_API_REFERENCE.md](CART_API_REFERENCE.md)** (신규, v1.0.0)
+- **[CART_API_REFERENCE.md](CART_API_REFERENCE.md)** (신규, v1.1.0, 2025-12-17)
   - CartUiState API 문서
-  - CartIntent 모든 Intent 타입 명세
+  - CartEvent (Event 용어 표준화) 모든 Event 타입 명세
   - CartSideEffect 타입 정의
   - CartViewModel 메서드 API
   - CartScreen Composable 파라미터 문서
   - CartItem 데이터 모델
+  - CartRepository 통합 설명
 
 - **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** (신규, v1.0.0)
   - Feature 모듈 개발 패턴 및 체크리스트
@@ -174,9 +175,9 @@
   - 테스트 전략 (Unit Test, Compose UI Test)
   - 네비게이션 및 의존성 주입
 
-- **[DETAIL_API_REFERENCE.md](DETAIL_API_REFERENCE.md)** (신규, v1.0.0, 2025-12-13)
+- **[DETAIL_API_REFERENCE.md](DETAIL_API_REFERENCE.md)** (신규, v1.1.0, 2025-12-17)
   - ProductDetailUiState API 문서
-  - ProductDetailIntent 모든 Intent 타입 명세
+  - ProductDetailEvent (Event 용어 표준화) 모든 Event 타입 명세
   - ProductDetailSideEffect 타입 정의
   - ProductDetailViewModel 메서드 API
   - UI Components 파라미터 문서 (ProductDetailScreen, QuantitySelector, AddToCartButton)

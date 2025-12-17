@@ -8,9 +8,10 @@
 
 1. [ProductDetailContract](#productdetailcontract)
 2. [ProductDetailViewModel](#productdetailviewmodel)
-3. [Repository Interface](#repository-interface)
+3. [CartRepository 통합](#cartrepository-통합)
 4. [UI Components](#ui-components)
 5. [Navigation](#navigation)
+6. [Event 용어 변경 (Intent → Event)](#event-용어-변경-intent--event)
 
 ---
 
@@ -61,14 +62,14 @@ when {
 }
 ```
 
-### ProductDetailIntent (sealed interface)
+### ProductDetailEvent (sealed interface)
 
 **사용자의 인터랙션을 나타냅니다.**
 
 #### LoadProduct
 
 ```kotlin
-data class LoadProduct(val productId: String) : ProductDetailIntent
+data class LoadProduct(val productId: String) : ProductDetailEvent
 ```
 
 상품 정보 로드 요청입니다.
@@ -79,8 +80,8 @@ data class LoadProduct(val productId: String) : ProductDetailIntent
 **사용 예시:**
 
 ```kotlin
-viewModel.processIntent(
-    ProductDetailIntent.LoadProduct(productId = "PRODUCT-123")
+viewModel.onEvent(
+    ProductDetailEvent.LoadProduct(productId = "PRODUCT-123")
 )
 ```
 
@@ -92,26 +93,26 @@ viewModel.processIntent(
 #### SetQuantity
 
 ```kotlin
-data class SetQuantity(val quantity: Int) : ProductDetailIntent
+data class SetQuantity(val quantity: Int) : ProductDetailEvent
 ```
 
-상품 수량을 설정합니다. 범위는 1~99입니다.
+상품 수량을 설정합니다. 범위는 1~999입니다.
 
 **파라미터:**
-- `quantity` (Int): 설정할 수량 (유효 범위: 1~99)
+- `quantity` (Int): 설정할 수량 (유효 범위: 1~999)
 
 **유효성 검사:**
-- 범위를 벗어나는 값은 무시됩니다.
+- 범위를 벗어나는 값은 자동으로 clamped됩니다.
 
 **사용 예시:**
 
 ```kotlin
 // 수량 5개로 설정
-viewModel.processIntent(ProductDetailIntent.SetQuantity(5))
+viewModel.onEvent(ProductDetailEvent.SetQuantity(5))
 
-// 범위 밖: 무시됨
-viewModel.processIntent(ProductDetailIntent.SetQuantity(100))  // 무시
-viewModel.processIntent(ProductDetailIntent.SetQuantity(0))    // 무시
+// 범위 밖: clamped됨
+viewModel.onEvent(ProductDetailEvent.SetQuantity(1000))  // 999로 자동 조정
+viewModel.onEvent(ProductDetailEvent.SetQuantity(0))     // 1로 자동 조정
 ```
 
 **결과:**
@@ -120,7 +121,7 @@ viewModel.processIntent(ProductDetailIntent.SetQuantity(0))    // 무시
 #### AddToCart
 
 ```kotlin
-object AddToCart : ProductDetailIntent
+object AddToCart : ProductDetailEvent
 ```
 
 현재 선택된 수량으로 장바구니에 상품을 추가합니다.
@@ -128,7 +129,7 @@ object AddToCart : ProductDetailIntent
 **사용 예시:**
 
 ```kotlin
-viewModel.processIntent(ProductDetailIntent.AddToCart)
+viewModel.onEvent(ProductDetailEvent.AddToCart)
 ```
 
 **전제 조건:**
@@ -149,7 +150,7 @@ ProductDetailSideEffect.ShowSnackbar("장바구니에 추가되었습니다")
 #### DismissError
 
 ```kotlin
-object DismissError : ProductDetailIntent
+object DismissError : ProductDetailEvent
 ```
 
 표시된 에러 메시지를 닫습니다.
@@ -157,7 +158,7 @@ object DismissError : ProductDetailIntent
 **사용 예시:**
 
 ```kotlin
-viewModel.processIntent(ProductDetailIntent.DismissError)
+viewModel.onEvent(ProductDetailEvent.DismissError)
 ```
 
 **결과:**
@@ -166,7 +167,7 @@ viewModel.processIntent(ProductDetailIntent.DismissError)
 #### DismissSuccess
 
 ```kotlin
-object DismissSuccess : ProductDetailIntent
+object DismissSuccess : ProductDetailEvent
 ```
 
 성공 메시지를 닫습니다.
@@ -174,7 +175,7 @@ object DismissSuccess : ProductDetailIntent
 **사용 예시:**
 
 ```kotlin
-viewModel.processIntent(ProductDetailIntent.DismissSuccess)
+viewModel.onEvent(ProductDetailEvent.DismissSuccess)
 ```
 
 **결과:**
@@ -182,15 +183,15 @@ viewModel.processIntent(ProductDetailIntent.DismissSuccess)
 
 ---
 
-## ProductDetailIntent - 전체 목록
+## ProductDetailEvent - 전체 목록
 
 ```kotlin
-sealed interface ProductDetailIntent {
-    data class LoadProduct(val productId: String) : ProductDetailIntent
-    data class SetQuantity(val quantity: Int) : ProductDetailIntent
-    object AddToCart : ProductDetailIntent
-    object DismissError : ProductDetailIntent
-    object DismissSuccess : ProductDetailIntent
+sealed interface ProductDetailEvent {
+    data class LoadProduct(val productId: String) : ProductDetailEvent
+    data class SetQuantity(val quantity: Int) : ProductDetailEvent
+    object AddToCart : ProductDetailEvent
+    object DismissError : ProductDetailEvent
+    object DismissSuccess : ProductDetailEvent
 }
 ```
 
@@ -280,13 +281,13 @@ class ProductDetailViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val cartRepository: CartRepository,
     @Dispatcher(DaitsoDispatchers.IO) private val ioDispatcher: CoroutineDispatcher
-) : BaseViewModel<
-    ProductDetailUiState,
-    ProductDetailIntent,
-    ProductDetailSideEffect
->(
-    initialState = ProductDetailUiState()
-)
+) : ViewModel() {
+    private val _state = MutableStateFlow<ProductDetailUiState>(ProductDetailUiState())
+    val state: StateFlow<ProductDetailUiState> = _state.asStateFlow()
+
+    private val _sideEffect = MutableSharedFlow<ProductDetailSideEffect>()
+    val sideEffect: SharedFlow<ProductDetailSideEffect> = _sideEffect.asSharedFlow()
+}
 ```
 
 ### 공개 프로퍼티
@@ -327,35 +328,81 @@ LaunchedEffect(Unit) {
 
 ### 공개 메서드
 
-#### processIntent(intent: ProductDetailIntent)
+#### onEvent(event: ProductDetailEvent)
 
 ```kotlin
-fun processIntent(intent: ProductDetailIntent)
+fun onEvent(event: ProductDetailEvent)
 ```
 
 사용자 인터랙션을 처리합니다.
 
 **파라미터:**
-- `intent` (ProductDetailIntent): 처리할 Intent
+- `event` (ProductDetailEvent): 처리할 Event
 
 **사용 예시:**
 
 ```kotlin
 // 상품 로드
-viewModel.processIntent(ProductDetailIntent.LoadProduct("PRODUCT-123"))
+viewModel.onEvent(ProductDetailEvent.LoadProduct("PRODUCT-123"))
 
 // 수량 설정
-viewModel.processIntent(ProductDetailIntent.SetQuantity(5))
+viewModel.onEvent(ProductDetailEvent.SetQuantity(5))
 
 // 장바구니 추가
-viewModel.processIntent(ProductDetailIntent.AddToCart)
+viewModel.onEvent(ProductDetailEvent.AddToCart)
 ```
 
 ---
 
-## Repository Interface
+## CartRepository 통합
 
-### ProductRepository
+ProductDetailViewModel은 장바구니 기능을 위해 `:core:data` 모듈의 통합 CartRepository를 사용합니다.
+
+자세한 내용은 [CORE_DATA_README.md - CartRepository 통합](./modules/CORE_DATA_README.md#cartrepository-통합)을 참조하세요.
+
+### 주요 메서드
+
+```kotlin
+interface CartRepository {
+    fun getCartItems(): Flow<List<CartItem>>
+    suspend fun updateQuantity(productId: String, quantity: Int)
+    suspend fun removeItem(productId: String)
+    suspend fun clearCart()
+    suspend fun addToCart(product: Product, quantity: Int): Boolean
+    suspend fun getProductDetails(productId: String): Product
+}
+```
+
+### ProductDetailViewModel에서의 사용
+
+```kotlin
+@HiltViewModel
+class ProductDetailViewModel @Inject constructor(
+    private val cartRepository: CartRepository,
+    private val productRepository: ProductRepository
+) : ViewModel() {
+
+    // 장바구니에 상품 추가
+    private fun addToCart(product: Product, quantity: Int) {
+        viewModelScope.launch {
+            try {
+                val success = cartRepository.addToCart(product, quantity)
+                if (success) {
+                    _sideEffect.emit(ProductDetailSideEffect.ShowSnackbar("장바구니에 추가되었습니다"))
+                } else {
+                    _state.value = _state.value.copy(error = "Invalid quantity")
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }
+}
+```
+
+---
+
+## ProductRepository
 
 ```kotlin
 interface ProductRepository {
@@ -721,8 +768,123 @@ sealed class Result<out T> {
 
 ---
 
+## Event 용어 변경 (Intent → Event)
+
+### 변경 배경
+
+SPEC-ANDROID-REFACTOR-001에 따라 MVI 용어를 표준화했습니다. 모든 Feature 모듈에서 "Intent" 대신 "Event"를 사용합니다.
+
+### 용어 변경 사항
+
+| Before | After | 설명 |
+|--------|-------|------|
+| `ProductDetailIntent` | `ProductDetailEvent` | 사용자 인터랙션 표현 |
+| `sealed interface ProductDetailIntent : UiEvent` | `sealed interface ProductDetailEvent : UiEvent` | 인터페이스 정의 |
+| `processIntent(intent)` | `onEvent(event)` | ViewModel 메서드명 |
+
+### 코드 마이그레이션
+
+#### Before (Intent 사용)
+
+```kotlin
+sealed interface ProductDetailIntent : UiEvent {
+    data class LoadProduct(val productId: String) : ProductDetailIntent
+    data class SetQuantity(val quantity: Int) : ProductDetailIntent
+    object AddToCart : ProductDetailIntent
+    object DismissError : ProductDetailIntent
+    object DismissSuccess : ProductDetailIntent
+}
+
+class ProductDetailViewModel @Inject constructor(...) : ViewModel() {
+    fun processIntent(intent: ProductDetailIntent) {
+        when (intent) {
+            is ProductDetailIntent.LoadProduct -> loadProduct(intent.productId)
+            is ProductDetailIntent.SetQuantity -> setQuantity(intent.quantity)
+            is ProductDetailIntent.AddToCart -> addToCart()
+            // ...
+        }
+    }
+}
+```
+
+#### After (Event 사용)
+
+```kotlin
+sealed interface ProductDetailEvent : UiEvent {
+    data class LoadProduct(val productId: String) : ProductDetailEvent
+    data class SetQuantity(val quantity: Int) : ProductDetailEvent
+    object AddToCart : ProductDetailEvent
+    object DismissError : ProductDetailEvent
+    object DismissSuccess : ProductDetailEvent
+}
+
+class ProductDetailViewModel @Inject constructor(...) : ViewModel() {
+    fun onEvent(event: ProductDetailEvent) {
+        when (event) {
+            is ProductDetailEvent.LoadProduct -> loadProduct(event.productId)
+            is ProductDetailEvent.SetQuantity -> setQuantity(event.quantity)
+            is ProductDetailEvent.AddToCart -> addToCart()
+            // ...
+        }
+    }
+}
+```
+
+### UI에서의 변경
+
+#### Before
+
+```kotlin
+@Composable
+fun ProductDetailScreen(viewModel: ProductDetailViewModel) {
+    // ...
+    Button(onClick = {
+        viewModel.processIntent(ProductDetailIntent.AddToCart)
+    }) {
+        Text("장바구니 추가")
+    }
+}
+```
+
+#### After
+
+```kotlin
+@Composable
+fun ProductDetailScreen(viewModel: ProductDetailViewModel) {
+    // ...
+    Button(onClick = {
+        viewModel.onEvent(ProductDetailEvent.AddToCart)
+    }) {
+        Text("장바구니 추가")
+    }
+}
+```
+
+### 표준화된 MVI 용어 정의
+
+| 용어 | 설명 | 구현 위치 |
+|------|------|----------|
+| **Event** | 사용자의 인터랙션 및 시스템 이벤트 | `{Feature}Contract.kt` |
+| **State** | UI가 렌더링하기 위한 상태 데이터 | `{Feature}Contract.kt` |
+| **SideEffect** | UI 업데이트 외의 부가 효과 (네비게이션, 토스트 등) | `{Feature}Contract.kt` |
+| **ViewModel** | Event를 처리하고 State를 관리 | `{Feature}ViewModel.kt` |
+
+### 전체 프로젝트 Event 용어 통일
+
+- `feature:detail`: ProductDetailEvent ✅ (완료)
+- `feature:cart`: CartEvent ✅ (완료)
+- `feature:home`: HomeEvent (향후 지정)
+
+모든 Feature 모듈에서 일관되게 "Event" 용어를 사용하여 코드 가독성과 유지보수성을 향상시킵니다.
+
+---
+
 ## 참고
 
+- [CartRepository 통합 - CORE_DATA_README.md](./modules/CORE_DATA_README.md#cartrepository-통합)
+- [CART_API_REFERENCE.md](./CART_API_REFERENCE.md)
+- [SPEC-ANDROID-REFACTOR-001](../specs/SPEC-ANDROID-REFACTOR-001/spec.md)
+- [SPEC-ANDROID-MVI-002](../specs/SPEC-ANDROID-MVI-002/spec.md) - MVI 기본 구조
 - [Jetpack Compose](https://developer.android.com/jetpack/compose)
 - [Android Navigation](https://developer.android.com/guide/navigation)
 - [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html)
@@ -731,5 +893,6 @@ sealed class Result<out T> {
 ---
 
 **문서 작성**: 2025-12-13
-**SPEC 기반**: SPEC-ANDROID-FEATURE-DETAIL-001
-**API 버전**: 1.0.0
+**최종 업데이트**: 2025-12-17
+**SPEC 기반**: SPEC-ANDROID-REFACTOR-001
+**API 버전**: 1.1.0
