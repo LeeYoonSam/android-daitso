@@ -104,6 +104,51 @@ class ProductDetailContractTest {
     }
 
     @Test
+    fun testProductDetailEventLoadProductIsEvent() {
+        // Arrange & Act
+        val event: ProductDetailEvent = ProductDetailIntent.LoadProduct(productId = "test-123")
+
+        // Assert
+        assert(event is UiEvent)
+    }
+
+    @Test
+    fun testProductDetailEventSetQuantityIsEvent() {
+        // Arrange & Act
+        val event: ProductDetailEvent = ProductDetailIntent.SetQuantity(quantity = 5)
+
+        // Assert
+        assert(event is UiEvent)
+    }
+
+    @Test
+    fun testProductDetailEventAddToCartIsEvent() {
+        // Arrange & Act
+        val event: ProductDetailEvent = ProductDetailIntent.AddToCart
+
+        // Assert
+        assert(event is UiEvent)
+    }
+
+    @Test
+    fun testProductDetailEventDismissErrorIsEvent() {
+        // Arrange & Act
+        val event: ProductDetailEvent = ProductDetailIntent.DismissError
+
+        // Assert
+        assert(event is UiEvent)
+    }
+
+    @Test
+    fun testProductDetailEventDismissSuccessIsEvent() {
+        // Arrange & Act
+        val event: ProductDetailEvent = ProductDetailIntent.DismissSuccess
+
+        // Assert
+        assert(event is UiEvent)
+    }
+
+    @Test
     fun testProductDetailSideEffectNavigateBackIsSideEffect() {
         // Arrange & Act
         val effect = ProductDetailSideEffect.NavigateBack

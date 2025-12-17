@@ -1,9 +1,10 @@
 package com.bup.ys.daitso.feature.cart.presentation
 
 import com.bup.ys.daitso.feature.cart.contract.CartIntent
-import com.bup.ys.daitso.feature.cart.contract.CartItem
+import com.bup.ys.daitso.core.model.CartItem as CoreCartItem
 import com.bup.ys.daitso.feature.cart.contract.CartUiState
-import com.bup.ys.daitso.feature.cart.domain.CartRepository
+import com.bup.ys.daitso.core.data.repository.CartRepository
+import com.bup.ys.daitso.feature.cart.contract.CartItem
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -62,8 +63,8 @@ class CartViewModelTest {
     fun testLoadCartItemsSuccess() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1"),
-            CartItem("2", "Product 2", 20.0, 1, "url2")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1"),
+            CoreCartItem("2", "Product 2", 1, 20.0, "url2")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
 
@@ -96,7 +97,7 @@ class CartViewModelTest {
     fun testUpdateQuantitySuccess() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
         coEvery { cartRepository.updateQuantity("1", 5) } returns Unit
@@ -117,7 +118,7 @@ class CartViewModelTest {
     fun testUpdateQuantityClampedAtMinimum() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
         coEvery { cartRepository.updateQuantity("1", 1) } returns Unit
@@ -138,7 +139,7 @@ class CartViewModelTest {
     fun testUpdateQuantityClampedAtMaximum() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
         coEvery { cartRepository.updateQuantity("1", 999) } returns Unit
@@ -159,8 +160,8 @@ class CartViewModelTest {
     fun testRemoveItemSuccess() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1"),
-            CartItem("2", "Product 2", 20.0, 1, "url2")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1"),
+            CoreCartItem("2", "Product 2", 1, 20.0, "url2")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
         coEvery { cartRepository.removeItem("1") } returns Unit
@@ -181,8 +182,8 @@ class CartViewModelTest {
     fun testClearCartSuccess() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1"),
-            CartItem("2", "Product 2", 20.0, 1, "url2")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1"),
+            CoreCartItem("2", "Product 2", 1, 20.0, "url2")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
         coEvery { cartRepository.clearCart() } returns Unit
@@ -204,8 +205,8 @@ class CartViewModelTest {
     fun testTotalPriceCalculationCorrectly() = runTest {
         // Arrange
         val mockItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1"),  // 10.0 * 2 = 20.0
-            CartItem("2", "Product 2", 15.0, 1, "url2")   // 15.0 * 1 = 15.0
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1"),  // 10.0 * 2 = 20.0
+            CoreCartItem("2", "Product 2", 1, 15.0, "url2")   // 15.0 * 1 = 15.0
             // Total: 35.0
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(mockItems)
@@ -240,7 +241,7 @@ class CartViewModelTest {
     fun testMultipleOperationsInSequence() = runTest {
         // Arrange
         val initialItems = listOf(
-            CartItem("1", "Product 1", 10.0, 2, "url1")
+            CoreCartItem("1", "Product 1", 2, 10.0, "url1")
         )
         coEvery { cartRepository.getCartItems() } returns flowOf(initialItems)
         coEvery { cartRepository.updateQuantity("1", 5) } returns Unit

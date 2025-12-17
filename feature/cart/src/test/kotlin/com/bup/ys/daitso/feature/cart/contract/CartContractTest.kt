@@ -169,4 +169,54 @@ class CartContractTest {
         assertEquals(true, updatedState.isLoading)
         assertEquals(null, updatedState.error)
     }
+
+    @Test
+    fun testLoadCartItemsEvent() {
+        // Arrange & Act
+        val event: CartEvent = CartIntent.LoadCartItems
+
+        // Assert
+        assertIs<CartEvent>(event)
+    }
+
+    @Test
+    fun testUpdateQuantityEvent() {
+        // Arrange & Act
+        val event: CartEvent = CartIntent.UpdateQuantity("prod-1", 5)
+
+        // Assert
+        assertIs<CartEvent>(event)
+        val updateEvent = event as CartIntent.UpdateQuantity
+        assertEquals("prod-1", updateEvent.productId)
+        assertEquals(5, updateEvent.quantity)
+    }
+
+    @Test
+    fun testRemoveItemEvent() {
+        // Arrange & Act
+        val event: CartEvent = CartIntent.RemoveItem("prod-1")
+
+        // Assert
+        assertIs<CartEvent>(event)
+        val removeEvent = event as CartIntent.RemoveItem
+        assertEquals("prod-1", removeEvent.productId)
+    }
+
+    @Test
+    fun testClearCartEvent() {
+        // Arrange & Act
+        val event: CartEvent = CartIntent.ClearCart
+
+        // Assert
+        assertIs<CartEvent>(event)
+    }
+
+    @Test
+    fun testDismissErrorEvent() {
+        // Arrange & Act
+        val event: CartEvent = CartIntent.DismissError
+
+        // Assert
+        assertIs<CartEvent>(event)
+    }
 }

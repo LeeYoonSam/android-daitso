@@ -4,7 +4,7 @@ import com.bup.ys.daitso.core.model.Product
 import com.bup.ys.daitso.feature.detail.contract.ProductDetailIntent
 import com.bup.ys.daitso.feature.detail.contract.ProductDetailSideEffect
 import com.bup.ys.daitso.feature.detail.contract.ProductDetailUiState
-import com.bup.ys.daitso.feature.detail.repository.CartRepository
+import com.bup.ys.daitso.core.data.repository.CartRepository
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -128,7 +128,7 @@ class ProductDetailViewModelTest {
         val productId = "product-123"
         val mockProduct = createMockProduct(id = productId, name = "Test Product", price = 29.99)
         coEvery { cartRepository.getProductDetails(productId) } returns mockProduct
-        coEvery { cartRepository.addToCart(productId, 2) } returns true
+        coEvery { cartRepository.addToCart(mockProduct, 2) } returns true
 
         // Load product first
         viewModel.submitEvent(ProductDetailIntent.LoadProduct(productId))
@@ -189,7 +189,7 @@ class ProductDetailViewModelTest {
         val productId = "product-123"
         val mockProduct = createMockProduct(id = productId)
         coEvery { cartRepository.getProductDetails(productId) } returns mockProduct
-        coEvery { cartRepository.addToCart(productId, 1) } returns true
+        coEvery { cartRepository.addToCart(mockProduct, 1) } returns true
 
         // Load and add to cart
         viewModel.submitEvent(ProductDetailIntent.LoadProduct(productId))
