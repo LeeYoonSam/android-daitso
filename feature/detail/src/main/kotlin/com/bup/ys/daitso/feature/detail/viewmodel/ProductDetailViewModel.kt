@@ -5,7 +5,7 @@ import com.bup.ys.daitso.core.ui.base.BaseViewModel
 import com.bup.ys.daitso.feature.detail.contract.ProductDetailIntent
 import com.bup.ys.daitso.feature.detail.contract.ProductDetailSideEffect
 import com.bup.ys.daitso.feature.detail.contract.ProductDetailUiState
-import com.bup.ys.daitso.feature.detail.repository.CartRepository
+import com.bup.ys.daitso.core.data.repository.CartRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -85,7 +85,7 @@ class ProductDetailViewModel @Inject constructor(
             updateState(currentState.copy(isAddingToCart = true))
 
             val success = cartRepository.addToCart(
-                productId = product.id,
+                product = product,
                 quantity = currentState.selectedQuantity
             )
 

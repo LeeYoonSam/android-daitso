@@ -5,7 +5,7 @@ import com.bup.ys.daitso.core.ui.base.BaseViewModel
 import com.bup.ys.daitso.feature.cart.contract.CartIntent
 import com.bup.ys.daitso.feature.cart.contract.CartSideEffect
 import com.bup.ys.daitso.feature.cart.contract.CartUiState
-import com.bup.ys.daitso.feature.cart.domain.CartRepository
+import com.bup.ys.daitso.core.data.repository.CartRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -46,10 +46,19 @@ class CartViewModel @Inject constructor(
 
             // Collect items from repository flow
             cartRepository.getCartItems().collect { items ->
-                val totalPrice = calculateTotalPrice(items)
+                val uiItems = items.map { coreItem ->
+                    com.bup.ys.daitso.feature.cart.contract.CartItem(
+                        productId = coreItem.productId,
+                        name = coreItem.productName,
+                        price = coreItem.price,
+                        quantity = coreItem.quantity,
+                        imageUrl = coreItem.imageUrl
+                    )
+                }
+                val totalPrice = calculateTotalPrice(uiItems)
                 updateState(
                     currentState.copy(
-                        items = items,
+                        items = uiItems,
                         totalPrice = totalPrice,
                         isLoading = false,
                         error = null
